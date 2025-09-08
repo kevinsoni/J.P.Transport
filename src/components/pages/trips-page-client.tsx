@@ -28,8 +28,8 @@ export function TripsPageClient({ trips }: TripsPageClientProps) {
     if (filters.city && !trip.center_city?.toLowerCase().includes(filters.city.toLowerCase()) &&
         !trip.origin_city?.toLowerCase().includes(filters.city.toLowerCase()) &&
         !trip.destination_city?.toLowerCase().includes(filters.city.toLowerCase())) return false
-    const truckNo = trip.truck?.[0]?.truck_no || (trip.truck as any)?.truck_no
-    const consigneeName = trip.consignee1?.[0]?.name || (trip.consignee1 as any)?.name
+    const truckNo = (trip.truck as any)?.truck_no
+    const consigneeName = (trip.consignee1 as any)?.name
     if (filters.truckNo && !truckNo?.toLowerCase().includes(filters.truckNo.toLowerCase())) return false
     if (filters.consignee && !consigneeName?.toLowerCase().includes(filters.consignee.toLowerCase())) return false
     

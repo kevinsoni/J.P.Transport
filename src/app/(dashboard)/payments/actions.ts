@@ -73,3 +73,80 @@ export async function getTripsForPayment() {
     return []
   }
 }
+
+export async function getPaymentById(id: string) {
+  const supabase = createClient()
+
+  try {
+    const { data: payment, error } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        trip:trips(
+          lr_no,
+          invoice_no,
+          trip_date,
+          origin_city,
+          destination_city,
+          consignor:parties!consignor_id(name),
+          truck:trucks(truck_no)
+        )
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return payment
+  } catch (error) {
+    console.error('Error fetching payment by ID:', error)
+    return null
+  }
+}
+
+export async function deletePayment(id: string) {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('payments')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error deleting payment:', error)
+    throw new Error('Failed to delete payment')
+  }
+
+  revalidatePath('/payments')
+}
+
+export async function updatePayment(id: string, formData: FormData) {
+  const supabase = createClient()
+
+  const rawData = {
+    trip_id: formData.get('trip_id') as string,
+    payment_date: formData.get('payment_date') as string,
+    amount: parseFloat(formData.get('amount') as string),
+    method: formData.get('method') as 'CASH' | 'UPI' | 'BANK' | 'OTHER',
+    reference_no: formData.get('reference_no') as string || null,
+    notes: formData.get('notes') as string || null,
+  }
+
+  const validatedData = PaymentSchema.parse(rawData)
+
+  const { error } = await supabase
+    .from('payments')
+    .update(validatedData)
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error updating payment:', error)
+    throw new Error('Failed to update payment')
+  }
+
+  revalidatePath('/payments')
+  revalidatePath(`/payments/${id}`)
+  redirect(`/payments/${id}`)
+}

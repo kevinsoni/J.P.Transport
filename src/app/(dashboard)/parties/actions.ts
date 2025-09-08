@@ -88,3 +88,70 @@ export async function getPartiesByType() {
     }
   }
 }
+
+export async function getPartyById(id: string) {
+  const supabase = createClient()
+
+  try {
+    const { data: party, error } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return party
+  } catch (error) {
+    console.error('Error fetching party by ID:', error)
+    return null
+  }
+}
+
+export async function deleteParty(id: string) {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('parties')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error deleting party:', error)
+    throw new Error('Failed to delete party')
+  }
+
+  revalidatePath('/parties')
+}
+
+export async function updateParty(id: string, formData: FormData) {
+  const supabase = createClient()
+
+  const rawData = {
+    name: formData.get('name') as string,
+    type: formData.get('type') as 'consignor' | 'consignee' | 'owner' | 'transport',
+    phone: formData.get('phone') as string || null,
+    email: formData.get('email') as string || null,
+    gstin: formData.get('gstin') as string || null,
+    address: formData.get('address') as string || null,
+    city: formData.get('city') as string || null,
+  }
+
+  const validatedData = PartySchema.parse(rawData)
+
+  const { error } = await supabase
+    .from('parties')
+    .update(validatedData)
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error updating party:', error)
+    throw new Error('Failed to update party')
+  }
+
+  revalidatePath('/parties')
+  revalidatePath(`/parties/${id}`)
+  redirect(`/parties/${id}`)
+}

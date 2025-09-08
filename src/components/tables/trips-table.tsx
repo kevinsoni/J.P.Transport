@@ -28,6 +28,7 @@ import { SortableTableHeader } from '@/components/ui/sortable-table-header'
 import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog'
 import type { TripWithRelations } from '@/types/db'
 import { exportTripsToCSV } from '@/lib/csv'
+import { deleteTrip } from '@/app/(dashboard)/trips/actions'
 
 interface TripsTableProps {
   trips: TripWithRelations[]
@@ -167,6 +168,7 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[60px]">Sr No.</TableHead>
               <SortableTableHeader sortKey="date" currentSort={sortConfig} onSort={handleSort}>
                 Date
               </SortableTableHeader>
@@ -200,7 +202,7 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
           <TableBody>
             {paginatedTrips.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="h-24 text-center">
+                <TableCell colSpan={11} className="h-24 text-center">
                   <div className="flex flex-col items-center space-y-2">
                     <p className="text-gray-500">No trips found</p>
                     <Link href="/trips/new">
@@ -210,8 +212,11 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedTrips.map((trip) => (
+              paginatedTrips.map((trip, index) => (
                 <TableRow key={trip.id}>
+                  <TableCell className="text-center text-sm text-gray-600">
+                    {startIndex + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     {formatDate(trip.trip_date)}
                   </TableCell>
@@ -258,9 +263,12 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                       <DeleteConfirmationDialog 
                         itemName={`Trip ${trip.lr_no || trip.invoice_no || trip.id}`}
                         itemType="trip"
-                        onConfirm={() => {
-                          // TODO: Implement delete functionality
-                          console.log('Delete trip:', trip.id)
+                        onConfirm={async () => {
+                          try {
+                            await deleteTrip(trip.id)
+                          } catch (error) {
+                            console.error('Error deleting trip:', error)
+                          }
                         }}
                       />
                     </div>

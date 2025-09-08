@@ -224,3 +224,19 @@ export async function updateTrip(id: string, formData: FormData) {
   revalidatePath(`/trips/${id}`)
   redirect(`/trips/${id}`)
 }
+
+export async function deleteTrip(id: string) {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('trips')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error deleting trip:', error)
+    throw new Error('Failed to delete trip')
+  }
+
+  revalidatePath('/trips')
+}

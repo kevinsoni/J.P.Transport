@@ -16,6 +16,7 @@ import { SortableTableHeader } from '@/components/ui/sortable-table-header'
 import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog'
 import { Eye, Edit } from 'lucide-react'
 import { Party } from '@/types/db'
+import { deleteParty } from '@/app/(dashboard)/parties/actions'
 
 interface PartiesTableProps {
   parties: Party[]
@@ -124,6 +125,7 @@ export function PartiesTable({ parties }: PartiesTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[60px]">Sr No.</TableHead>
             <SortableTableHeader sortKey="name" currentSort={sortConfig} onSort={handleSort}>
               Name
             </SortableTableHeader>
@@ -146,8 +148,11 @@ export function PartiesTable({ parties }: PartiesTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedParties.map((party) => (
+          {sortedParties.map((party, index) => (
             <TableRow key={party.id}>
+              <TableCell className="text-center text-sm text-gray-600">
+                {index + 1}
+              </TableCell>
               <TableCell className="font-medium">{party.name}</TableCell>
               <TableCell>
                 <Badge variant={getTypeBadgeVariant(party.type)}>
@@ -173,9 +178,12 @@ export function PartiesTable({ parties }: PartiesTableProps) {
                   <DeleteConfirmationDialog 
                     itemName={party.name}
                     itemType="party"
-                    onConfirm={() => {
-                      // TODO: Implement delete functionality
-                      console.log('Delete party:', party.id)
+                    onConfirm={async () => {
+                      try {
+                        await deleteParty(party.id)
+                      } catch (error) {
+                        console.error('Error deleting party:', error)
+                      }
                     }}
                   />
                 </div>

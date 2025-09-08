@@ -16,6 +16,7 @@ import { SortableTableHeader } from '@/components/ui/sortable-table-header'
 import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog'
 import { Eye, Edit } from 'lucide-react'
 import { Payment, PaymentMethod } from '@/types/db'
+import { deletePayment } from '@/app/(dashboard)/payments/actions'
 
 type PaymentWithTrip = Payment & {
   trip: {
@@ -125,6 +126,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[60px]">Sr No.</TableHead>
             <SortableTableHeader sortKey="date" currentSort={sortConfig} onSort={handleSort}>
               Date
             </SortableTableHeader>
@@ -145,10 +147,13 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedPayments.map((payment) => {
+          {sortedPayments.map((payment, index) => {
             const trip = payment.trip?.[0]
             return (
               <TableRow key={payment.id}>
+                <TableCell className="text-center text-sm text-gray-600">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-medium">
                   {formatDate(payment.payment_date)}
                 </TableCell>
@@ -209,9 +214,12 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                     <DeleteConfirmationDialog 
                       itemName={`Payment ${payment.reference_no || payment.id}`}
                       itemType="payment"
-                      onConfirm={() => {
-                        // TODO: Implement delete functionality
-                        console.log('Delete payment:', payment.id)
+                      onConfirm={async () => {
+                        try {
+                          await deletePayment(payment.id)
+                        } catch (error) {
+                          console.error('Error deleting payment:', error)
+                        }
                       }}
                     />
                   </div>
