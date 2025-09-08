@@ -33,10 +33,12 @@ export function TruckForm({ owners }: TruckFormProps) {
     formData.set('owner_id', ownerId)
     formData.set('active', active)
     
-    console.log('FormData contents:')
-    for (const [key, value] of formData.entries()) {
-      console.log(key, value)
-    }
+    console.log('FormData contents:', {
+      truck_no: formData.get('truck_no'),
+      owner_id: formData.get('owner_id'),
+      capacity_tons: formData.get('capacity_tons'),
+      active: formData.get('active')
+    })
     
     try {
       await createTruck(formData)
