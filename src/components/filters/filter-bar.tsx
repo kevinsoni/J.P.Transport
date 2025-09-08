@@ -98,14 +98,14 @@ export function FilterBar({
           <div>
             <Label htmlFor="status" className="text-sm font-medium">Status</Label>
             <Select
-              value={localFilters.status || ''}
-              onValueChange={(value) => updateFilter('status', value)}
+              value={localFilters.status || undefined}
+              onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="IN">IN</SelectItem>
                 <SelectItem value="OUT">OUT</SelectItem>
                 <SelectItem value="COMPLETED">COMPLETED</SelectItem>
@@ -117,14 +117,14 @@ export function FilterBar({
           <div>
             <Label htmlFor="paymentStatus" className="text-sm font-medium">Payment Status</Label>
             <Select
-              value={localFilters.paymentStatus || ''}
-              onValueChange={(value) => updateFilter('paymentStatus', value)}
+              value={localFilters.paymentStatus || undefined}
+              onValueChange={(value) => updateFilter('paymentStatus', value === 'all' ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All payment statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Payment Statuses</SelectItem>
+                <SelectItem value="all">All Payment Statuses</SelectItem>
                 <SelectItem value="UNPAID">UNPAID</SelectItem>
                 <SelectItem value="PARTIAL">PARTIAL</SelectItem>
                 <SelectItem value="PAID">PAID</SelectItem>
