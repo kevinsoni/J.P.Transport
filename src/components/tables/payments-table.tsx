@@ -27,7 +27,7 @@ type PaymentWithTrip = Payment & {
     destination_city: string | null
     consignor: { name: string }[] | null
     truck: { truck_no: string }[] | null
-  }[] | null
+  } | null
 }
 
 interface PaymentsTableProps {
@@ -163,7 +163,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                       {trip?.lr_no || trip?.invoice_no || 'N/A'}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {(trip?.truck as any)?.truck_no || 'N/A'}
+                      {trip?.truck?.[0]?.truck_no || 'N/A'}
                     </span>
                   </div>
                 </TableCell>
@@ -176,7 +176,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                 </TableCell>
                 <TableCell>
                   <div className="text-sm">
-                    {(trip?.consignor as any)?.name || 'N/A'}
+                    {trip?.consignor?.[0]?.name || 'N/A'}
                   </div>
                 </TableCell>
                 <TableCell>
