@@ -53,7 +53,7 @@ export function PaymentForm({ trips }: PaymentFormProps) {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN')
+    return new Date(dateString).toLocaleDateString('en-GB')
   }
 
   return (

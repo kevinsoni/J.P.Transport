@@ -39,7 +39,18 @@ export async function getPayments() {
   try {
     const { data: payments, error } = await supabase
       .from('payments')
-      .select('*')
+      .select(`
+        *,
+        trip:trips(
+          lr_no,
+          invoice_no,
+          trip_date,
+          origin_city,
+          destination_city,
+          consignor:parties!consignor_id(name),
+          truck:trucks(truck_no)
+        )
+      `)
       .order('payment_date', { ascending: false })
 
     if (error) {

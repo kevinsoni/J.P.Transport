@@ -92,7 +92,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN')
+    return new Date(dateString).toLocaleDateString('en-GB')
   }
 
   const getMethodBadgeVariant = (method: PaymentMethod) => {
@@ -148,7 +148,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
         </TableHeader>
         <TableBody>
           {sortedPayments.map((payment, index) => {
-            const trip = payment.trip?.[0]
+            const trip = payment.trip
             return (
               <TableRow key={payment.id}>
                 <TableCell className="text-center text-sm text-gray-600">
@@ -163,7 +163,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                       {trip?.lr_no || trip?.invoice_no || 'N/A'}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {trip?.truck?.[0]?.truck_no || 'N/A'}
+                      {(trip?.truck as any)?.truck_no || 'N/A'}
                     </span>
                   </div>
                 </TableCell>
@@ -176,7 +176,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                 </TableCell>
                 <TableCell>
                   <div className="text-sm">
-                    {trip?.consignor?.[0]?.name || 'N/A'}
+                    {(trip?.consignor as any)?.name || 'N/A'}
                   </div>
                 </TableCell>
                 <TableCell>

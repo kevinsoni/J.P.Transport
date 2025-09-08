@@ -16,12 +16,12 @@ export function formatCurrency(amount: number): string {
 
 export function formatDate(date: Date | string): string {
   const d = new Date(date)
-  return d.toLocaleDateString('en-IN')
+  return d.toLocaleDateString('en-GB') // dd/mm/yyyy format
 }
 
 export function formatDateTime(date: Date | string): string {
   const d = new Date(date)
-  return d.toLocaleString('en-IN')
+  return d.toLocaleString('en-GB') // dd/mm/yyyy hh:mm:ss format
 }
 
 export function generateId(): string {
