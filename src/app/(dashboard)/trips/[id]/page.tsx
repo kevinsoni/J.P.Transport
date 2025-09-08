@@ -1,15 +1,42 @@
 import Link from 'next/link'
 import { ArrowLeft, Edit, CreditCard, FileText } from 'lucide-react'
+import { notFound } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { getTripById } from '../actions'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface TripDetailsPageProps {
   params: { id: string }
 }
 
-export default function TripDetailsPage({ params }: TripDetailsPageProps) {
+export default async function TripDetailsPage({ params }: TripDetailsPageProps) {
+  const trip = await getTripById(params.id)
+  
+  if (!trip) {
+    notFound()
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED': return 'default'
+      case 'IN': return 'secondary'
+      case 'OUT': return 'destructive'
+      case 'CANCELLED': return 'outline'
+      default: return 'secondary'
+    }
+  }
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'PAID': return 'default'
+      case 'PARTIAL': return 'secondary'
+      case 'UNPAID': return 'destructive'
+      default: return 'outline'
+    }
+  }
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
@@ -45,8 +72,8 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
               <CardTitle className="flex items-center justify-between">
                 Trip Information
                 <div className="flex gap-2">
-                  <Badge>COMPLETED</Badge>
-                  <Badge variant="secondary">PAID</Badge>
+                  <Badge variant={getStatusColor(trip.status)}>{trip.status}</Badge>
+                  <Badge variant={getPaymentStatusColor(trip.payment_status)}>{trip.payment_status}</Badge>
                 </div>
               </CardTitle>
             </CardHeader>
@@ -55,37 +82,48 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Date</label>
-                    <p className="text-base">January 15, 2024</p>
+                    <p className="text-base">{formatDate(trip.trip_date)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Truck</label>
-                    <p className="text-base">MH12AB1234</p>
+                    <p className="text-base">{trip.truck?.truck_no || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Driver</label>
-                    <p className="text-base">Ravi Kumar (9876543210)</p>
+                    <p className="text-base">
+                      {trip.driver_name || 'N/A'}
+                      {trip.driver_phone && ` (${trip.driver_phone})`}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">LR Number</label>
-                    <p className="text-base">LR001</p>
+                    <p className="text-base">{trip.lr_no || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Route</label>
-                    <p className="text-base">Mumbai → Delhi</p>
+                    <p className="text-base">
+                      {trip.origin_city && trip.destination_city 
+                        ? `${trip.origin_city} → ${trip.destination_city}`
+                        : trip.center_city || 'N/A'
+                      }
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Cargo</label>
-                    <p className="text-base">Electronics (15.5 MT)</p>
+                    <p className="text-base">
+                      {trip.cargo_details || trip.material_type || 'N/A'}
+                      {trip.weight_mt && ` (${trip.weight_mt} MT)`}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Packages</label>
-                    <p className="text-base">100 packages</p>
+                    <p className="text-base">{trip.no_of_packages ? `${trip.no_of_packages} packages` : 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Invoice</label>
-                    <p className="text-base">INV001</p>
+                    <p className="text-base">{trip.invoice_no || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -99,16 +137,25 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">January 20, 2024</p>
-                    <p className="text-sm text-gray-600">UPI Payment - UPI123456</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">₹58,950</p>
-                    <p className="text-sm text-green-600">Full Payment</p>
-                  </div>
-                </div>
+                {trip.payments && trip.payments.length > 0 ? (
+                  trip.payments.map((payment: any) => (
+                    <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{formatDate(payment.payment_date)}</p>
+                        <p className="text-sm text-gray-600">
+                          {payment.method} Payment
+                          {payment.reference_no && ` - ${payment.reference_no}`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{formatCurrency(payment.amount)}</p>
+                        <p className="text-sm text-green-600">{payment.notes || 'Payment'}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No payments recorded yet</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -122,50 +169,50 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span>Freight Amount</span>
-                <span>₹50,000</span>
+                <span>{formatCurrency(trip.freight_amount)}</span>
               </div>
               <div className="flex justify-between">
                 <span>RTO Charges</span>
-                <span>₹2,000</span>
+                <span>{formatCurrency(trip.rto_charges)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Toll Charges</span>
-                <span>₹1,500</span>
+                <span>{formatCurrency(trip.toll_charges)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Loading/Unloading</span>
-                <span>₹1,000</span>
+                <span>{formatCurrency(trip.loading_unloading)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Other Charges</span>
-                <span>₹500</span>
+                <span>{formatCurrency(trip.other_charges)}</span>
               </div>
               <div className="flex justify-between text-red-600">
                 <span>Diesel Advance</span>
-                <span>-₹5,000</span>
+                <span>-{formatCurrency(trip.diesel_advance)}</span>
               </div>
               <div className="border-t pt-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>₹50,000</span>
+                  <span>{formatCurrency(trip.freight_amount + trip.rto_charges + trip.toll_charges + trip.loading_unloading + trip.other_charges - trip.diesel_advance)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Tax (18%)</span>
-                  <span>₹8,950</span>
+                  <span>Tax ({trip.tax_percent}%)</span>
+                  <span>{formatCurrency((trip.freight_amount + trip.rto_charges + trip.toll_charges + trip.loading_unloading + trip.other_charges - trip.diesel_advance) * trip.tax_percent / 100)}</span>
                 </div>
               </div>
               <div className="border-t pt-2 font-semibold">
                 <div className="flex justify-between text-lg">
                   <span>Total Amount</span>
-                  <span>₹58,950</span>
+                  <span>{formatCurrency(trip.total_amount)}</span>
                 </div>
                 <div className="flex justify-between text-green-600">
                   <span>Amount Received</span>
-                  <span>₹58,950</span>
+                  <span>{formatCurrency(trip.amount_received)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Balance Due</span>
-                  <span>₹0</span>
+                  <span>{formatCurrency(trip.balance_due)}</span>
                 </div>
               </div>
             </CardContent>

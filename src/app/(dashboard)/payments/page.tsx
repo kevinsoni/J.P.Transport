@@ -3,8 +3,11 @@ import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PaymentsTable } from '@/components/tables/payments-table'
+import { getPayments } from './actions'
 
-export default function PaymentsPage() {
+export default async function PaymentsPage() {
+  const payments = await getPayments()
   
   return (
     <div>
@@ -23,16 +26,16 @@ export default function PaymentsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Payment Management</CardTitle>
+          <CardTitle>Payment Records</CardTitle>
           <CardDescription>
-            This feature is ready for implementation with server actions
+            {payments.length > 0 
+              ? `Showing ${payments.length} payment record${payments.length === 1 ? '' : 's'}`
+              : 'No payments recorded yet'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600">
-            The payments table and functionality will be implemented when server actions are added.
-            The database schema and types are already prepared.
-          </p>
+          <PaymentsTable payments={payments} />
         </CardContent>
       </Card>
     </div>

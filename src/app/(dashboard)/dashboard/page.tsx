@@ -14,32 +14,7 @@ import { Button } from '@/components/ui/button'
 import { BarChart } from '@/components/charts/bar-chart'
 import { LineChart } from '@/components/charts/line-chart'
 import { formatCurrency } from '@/lib/utils'
-
-// Mock data - replace with real data from server actions
-const kpiData = {
-  totalDue: 1250000,
-  totalReceived: 850000,
-  totalRTO: 125000,
-  tripsToday: 8,
-  openTrips: 23,
-}
-
-const monthlyPayments = [
-  { name: 'Jan', value: 650000 },
-  { name: 'Feb', value: 750000 },
-  { name: 'Mar', value: 580000 },
-  { name: 'Apr', value: 920000 },
-  { name: 'May', value: 850000 },
-  { name: 'Jun', value: 1100000 },
-]
-
-const topConsignees = [
-  { name: 'ABC Industries', value: 350000 },
-  { name: 'XYZ Corp', value: 280000 },
-  { name: 'PQR Ltd', value: 220000 },
-  { name: 'LMN Enterprises', value: 180000 },
-  { name: 'DEF Company', value: 150000 },
-]
+import { getDashboardKPIs, getMonthlyPayments, getTopConsignees } from './actions'
 
 function KPICard({ 
   title, 
@@ -100,7 +75,13 @@ function DashboardHeader() {
   )
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [kpiData, monthlyPayments, topConsignees] = await Promise.all([
+    getDashboardKPIs(),
+    getMonthlyPayments(),
+    getTopConsignees()
+  ])
+
   return (
     <div>
       <DashboardHeader />
@@ -153,7 +134,13 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <Suspense fallback={<div className="h-[300px] bg-gray-100 rounded animate-pulse" />}>
-              <LineChart data={monthlyPayments} />
+              {monthlyPayments.length > 0 ? (
+                <LineChart data={monthlyPayments} />
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  No payment data available yet
+                </div>
+              )}
             </Suspense>
           </CardContent>
         </Card>
@@ -165,7 +152,13 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <Suspense fallback={<div className="h-[300px] bg-gray-100 rounded animate-pulse" />}>
-              <BarChart data={topConsignees} />
+              {topConsignees.length > 0 ? (
+                <BarChart data={topConsignees} />
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  No consignee data available yet
+                </div>
+              )}
             </Suspense>
           </CardContent>
         </Card>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { 
   MoreHorizontal, 
@@ -24,12 +24,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { SortableTableHeader } from '@/components/ui/sortable-table-header'
+import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog'
 import type { TripWithRelations } from '@/types/db'
 import { exportTripsToCSV } from '@/lib/csv'
 
@@ -59,11 +55,84 @@ const getPaymentStatusColor = (status: string) => {
 
 export function TripsTable({ trips, loading = false }: TripsTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
   const itemsPerPage = 20
   
-  const totalPages = Math.ceil(trips.length / itemsPerPage)
+  const handleSort = (key: string) => {
+    setSortConfig(current => {
+      if (current?.key === key) {
+        return current.direction === 'asc' ? { key, direction: 'desc' } : null
+      }
+      return { key, direction: 'asc' }
+    })
+    setCurrentPage(1)
+  }
+
+  const sortedTrips = useMemo(() => {
+    if (!sortConfig) return trips
+
+    return [...trips].sort((a, b) => {
+      let aValue: any
+      let bValue: any
+
+      switch (sortConfig.key) {
+        case 'date':
+          aValue = new Date(a.trip_date)
+          bValue = new Date(b.trip_date)
+          break
+        case 'truck':
+          aValue = a.truck?.truck_no || ''
+          bValue = b.truck?.truck_no || ''
+          break
+        case 'status':
+          aValue = a.status
+          bValue = b.status
+          break
+        case 'route':
+          aValue = a.origin_city && a.destination_city 
+            ? `${a.origin_city} → ${a.destination_city}`
+            : a.center_city || ''
+          bValue = b.origin_city && b.destination_city 
+            ? `${b.origin_city} → ${b.destination_city}`
+            : b.center_city || ''
+          break
+        case 'consignee':
+          aValue = a.consignee1?.name || ''
+          bValue = b.consignee1?.name || ''
+          break
+        case 'total':
+          aValue = a.total_amount || 0
+          bValue = b.total_amount || 0
+          break
+        case 'received':
+          aValue = a.amount_received || 0
+          bValue = b.amount_received || 0
+          break
+        case 'balance':
+          aValue = a.balance_due || 0
+          bValue = b.balance_due || 0
+          break
+        case 'payment':
+          aValue = a.payment_status
+          bValue = b.payment_status
+          break
+        default:
+          return 0
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+  }, [trips, sortConfig])
+
+  const totalPages = Math.ceil(sortedTrips.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedTrips = trips.slice(startIndex, startIndex + itemsPerPage)
+  const paginatedTrips = sortedTrips.slice(startIndex, startIndex + itemsPerPage)
 
   const handleExport = () => {
     exportTripsToCSV(trips)
@@ -84,7 +153,7 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">
-            Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, trips.length)} of {trips.length} trips
+            Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedTrips.length)} of {sortedTrips.length} trips
           </span>
         </div>
         
@@ -98,16 +167,34 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Truck No.</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Route</TableHead>
-              <TableHead>Consignee</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Received</TableHead>
-              <TableHead>Balance</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <SortableTableHeader sortKey="date" currentSort={sortConfig} onSort={handleSort}>
+                Date
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="truck" currentSort={sortConfig} onSort={handleSort}>
+                Truck No.
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="status" currentSort={sortConfig} onSort={handleSort}>
+                Status
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="route" currentSort={sortConfig} onSort={handleSort}>
+                Route
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="consignee" currentSort={sortConfig} onSort={handleSort}>
+                Consignee
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="total" currentSort={sortConfig} onSort={handleSort}>
+                Total
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="received" currentSort={sortConfig} onSort={handleSort}>
+                Received
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="balance" currentSort={sortConfig} onSort={handleSort}>
+                Balance
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="payment" currentSort={sortConfig} onSort={handleSort}>
+                Payment
+              </SortableTableHeader>
+              <TableHead className="w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -128,7 +215,7 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                   <TableCell className="font-medium">
                     {formatDate(trip.trip_date)}
                   </TableCell>
-                  <TableCell>{trip.truck?.truck_no}</TableCell>
+                  <TableCell>{trip.truck?.truck_no || '-'}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(trip.status)}>
                       {trip.status}
@@ -141,7 +228,7 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                     }
                   </TableCell>
                   <TableCell className="max-w-[150px] truncate">
-                    {trip.consignee1?.name}
+                    {trip.consignee1?.name || '-'}
                   </TableCell>
                   <TableCell>{formatCurrency(trip.total_amount)}</TableCell>
                   <TableCell>{formatCurrency(trip.amount_received)}</TableCell>
@@ -152,37 +239,31 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/trips/${trip.id}`}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/trips/${trip.id}/edit`}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/payments/new?tripId=${trip.id}`}>
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            Add Payment
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center space-x-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/trips/${trip.id}`}>
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/trips/${trip.id}/edit`}>
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/payments/new?tripId=${trip.id}`}>
+                          <CreditCard className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      <DeleteConfirmationDialog 
+                        itemName={`Trip ${trip.lr_no || trip.invoice_no || trip.id}`}
+                        itemType="trip"
+                        onConfirm={() => {
+                          // TODO: Implement delete functionality
+                          console.log('Delete trip:', trip.id)
+                        }}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

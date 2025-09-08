@@ -3,8 +3,14 @@ import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PartiesTable } from '@/components/tables/parties-table'
+import { getParties, getPartiesByType } from './actions'
 
-export default function PartiesPage() {
+export default async function PartiesPage() {
+  const [parties, partyCounts] = await Promise.all([
+    getParties(),
+    getPartiesByType()
+  ])
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -27,7 +33,7 @@ export default function PartiesPage() {
             <CardDescription>Goods senders</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{partyCounts.consignor}</div>
             <p className="text-sm text-gray-600">Active consignors</p>
           </CardContent>
         </Card>
@@ -38,7 +44,7 @@ export default function PartiesPage() {
             <CardDescription>Goods receivers</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">28</div>
+            <div className="text-2xl font-bold">{partyCounts.consignee}</div>
             <p className="text-sm text-gray-600">Active consignees</p>
           </CardContent>
         </Card>
@@ -49,7 +55,7 @@ export default function PartiesPage() {
             <CardDescription>Vehicle owners</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{partyCounts.owner}</div>
             <p className="text-sm text-gray-600">Truck owners</p>
           </CardContent>
         </Card>
@@ -60,7 +66,7 @@ export default function PartiesPage() {
             <CardDescription>Transport companies</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{partyCounts.transport}</div>
             <p className="text-sm text-gray-600">Transport partners</p>
           </CardContent>
         </Card>
@@ -68,16 +74,16 @@ export default function PartiesPage() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Party Management</CardTitle>
+          <CardTitle>All Parties</CardTitle>
           <CardDescription>
-            Comprehensive party management system ready for implementation
+            {parties.length > 0 
+              ? `Showing ${parties.length} registered ${parties.length === 1 ? 'party' : 'parties'}`
+              : 'No parties registered yet'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600">
-            Party management with CRUD operations will be implemented with server actions.
-            The database schema supports all party types with full contact information.
-          </p>
+          <PartiesTable parties={parties} />
         </CardContent>
       </Card>
     </div>

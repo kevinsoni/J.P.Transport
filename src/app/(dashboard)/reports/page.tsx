@@ -3,32 +3,19 @@ import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart } from '@/components/charts/bar-chart'
+import { getReceivablesAging, getRTOSummary, getTruckRevenue, getCurrentMonthRTO } from './actions'
 
-const receivablesData = [
-  { name: '0-30 Days', value: 250000 },
-  { name: '31-60 Days', value: 180000 },
-  { name: '61-90 Days', value: 120000 },
-  { name: '90+ Days', value: 85000 },
-]
+export default async function ReportsPage() {
+  const [receivablesData, rtoSummary, truckRevenue, currentMonthRTO] = await Promise.all([
+    getReceivablesAging(),
+    getRTOSummary(),
+    getTruckRevenue(),
+    getCurrentMonthRTO()
+  ])
 
-const rtoSummary = [
-  { name: 'Jan', value: 15000 },
-  { name: 'Feb', value: 22000 },
-  { name: 'Mar', value: 18000 },
-  { name: 'Apr', value: 25000 },
-  { name: 'May', value: 20000 },
-  { name: 'Jun', value: 28000 },
-]
-
-const truckRevenue = [
-  { name: 'MH12AB1234', value: 450000 },
-  { name: 'KA05CD5678', value: 380000 },
-  { name: 'TN09EF9012', value: 320000 },
-  { name: 'DL01GH3456', value: 280000 },
-  { name: 'UP16IJ7890', value: 250000 },
-]
-
-export default function ReportsPage() {
+  const averageMonthlyRTO = rtoSummary.length > 0 
+    ? rtoSummary.reduce((sum, item) => sum + item.value, 0) / rtoSummary.length 
+    : 0
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -52,7 +39,13 @@ export default function ReportsPage() {
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <BarChart data={receivablesData} height={300} />
+                {receivablesData.length > 0 ? (
+                  <BarChart data={receivablesData} height={300} />
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    No receivables data available
+                  </div>
+                )}
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -81,16 +74,22 @@ export default function ReportsPage() {
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <BarChart data={rtoSummary} height={300} />
+                {rtoSummary.length > 0 ? (
+                  <BarChart data={rtoSummary} height={300} />
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    No RTO data available
+                  </div>
+                )}
               </div>
               <div className="space-y-4">
                 <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg">
                   <div className="text-sm text-gray-600">Total RTO This Month</div>
-                  <div className="text-2xl font-bold text-orange-600">₹28,000</div>
+                  <div className="text-2xl font-bold text-orange-600">₹{currentMonthRTO.toLocaleString()}</div>
                 </div>
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
                   <div className="text-sm text-gray-600">Average Monthly RTO</div>
-                  <div className="text-2xl font-bold text-blue-600">₹21,333</div>
+                  <div className="text-2xl font-bold text-blue-600">₹{Math.round(averageMonthlyRTO).toLocaleString()}</div>
                 </div>
                 <Button className="w-full" variant="outline">
                   <Download className="w-4 h-4 mr-2" />
@@ -110,7 +109,13 @@ export default function ReportsPage() {
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <BarChart data={truckRevenue} height={300} />
+                {truckRevenue.length > 0 ? (
+                  <BarChart data={truckRevenue} height={300} />
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    No truck revenue data available
+                  </div>
+                )}
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
