@@ -102,6 +102,46 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
     }).format(amount)
   }
 
+  const numberToWords = (num: number): string => {
+    if (num === 0) return 'Zero'
+    
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+    
+    const convertHundreds = (n: number): string => {
+      let result = ''
+      if (n >= 100) {
+        result += ones[Math.floor(n / 100)] + ' Hundred '
+        n %= 100
+      }
+      if (n >= 20) {
+        result += tens[Math.floor(n / 10)] + ' '
+        n %= 10
+      } else if (n >= 10) {
+        result += teens[n - 10] + ' '
+        return result
+      }
+      if (n > 0) {
+        result += ones[n] + ' '
+      }
+      return result
+    }
+    
+    let result = ''
+    const crores = Math.floor(num / 10000000)
+    const lakhs = Math.floor((num % 10000000) / 100000)
+    const thousands = Math.floor((num % 100000) / 1000)
+    const hundreds = num % 1000
+    
+    if (crores > 0) result += convertHundreds(crores) + 'Crore '
+    if (lakhs > 0) result += convertHundreds(lakhs) + 'Lakh '
+    if (thousands > 0) result += convertHundreds(thousands) + 'Thousand '
+    if (hundreds > 0) result += convertHundreds(hundreds)
+    
+    return result.trim() + ' Rupees Only'
+  }
+
   const handleAddParty = async (name: string, type: string): Promise<string> => {
     const formData = new FormData()
     formData.append('name', name)
@@ -329,14 +369,41 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
           {/* Total Row */}
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-center font-semibold">
-              <div className="text-blue-600">{formatCurrency(rateAmount)}</div>
-              <div className="text-blue-600">{formatCurrency(amounts.tp_charge_consignor1)}</div>
-              <div className="text-blue-600">{formatCurrency(amounts.tp_charge_consignor2)}</div>
-              <div className="text-blue-600">{formatCurrency(amounts.rto_charge_gujarat)}</div>
-              <div className="text-blue-600">{formatCurrency(amounts.rto_charge_maharashtra)}</div>
+              <div className="text-blue-600">
+                <div className="text-xs text-gray-600 mb-1">
+                  Rate Amount {amounts.payment_weight > 0 && amounts.rate > 0 ? `(₹${amounts.rate} × ${amounts.payment_weight} MT)` : ''}
+                </div>
+                <div>{formatCurrency(rateAmount)}</div>
+                <div className="text-xs text-gray-500 mt-1">{numberToWords(rateAmount)}</div>
+              </div>
+              <div className="text-blue-600">
+                <div className="text-xs text-gray-600 mb-1">+ TP Charge 1</div>
+                <div>{formatCurrency(amounts.tp_charge_consignor1)}</div>
+                <div className="text-xs text-gray-500 mt-1">{numberToWords(amounts.tp_charge_consignor1)}</div>
+              </div>
+              <div className="text-blue-600">
+                <div className="text-xs text-gray-600 mb-1">+ TP Charge 2</div>
+                <div>{formatCurrency(amounts.tp_charge_consignor2)}</div>
+                <div className="text-xs text-gray-500 mt-1">{numberToWords(amounts.tp_charge_consignor2)}</div>
+              </div>
+              <div className="text-blue-600">
+                <div className="text-xs text-gray-600 mb-1">+ RTO Gujarat</div>
+                <div>{formatCurrency(amounts.rto_charge_gujarat)}</div>
+                <div className="text-xs text-gray-500 mt-1">{numberToWords(amounts.rto_charge_gujarat)}</div>
+              </div>
+              <div className="text-blue-600">
+                <div className="text-xs text-gray-600 mb-1">+ RTO Maharashtra</div>
+                <div>{formatCurrency(amounts.rto_charge_maharashtra)}</div>
+                <div className="text-xs text-gray-500 mt-1">{numberToWords(amounts.rto_charge_maharashtra)}</div>
+              </div>
             </div>
-            <div className="text-center mt-2 text-lg font-bold text-blue-700">
-              TOTAL: {formatCurrency(totalAmount)}
+            <div className="text-center mt-4 p-3 bg-white rounded border-2 border-blue-200">
+              <div className="text-lg font-bold text-blue-700">
+                TOTAL: {formatCurrency(totalAmount)}
+              </div>
+              <div className="text-sm text-gray-600 mt-1 font-medium">
+                {numberToWords(totalAmount)}
+              </div>
             </div>
           </div>
 
@@ -380,6 +447,9 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
               <hr className="my-2" />
               <div className="text-lg font-bold text-green-700">
                 Bill Amount: {formatCurrency(billAmount)}
+              </div>
+              <div className="text-sm text-gray-600 mt-1 font-medium">
+                {numberToWords(billAmount)}
               </div>
             </div>
           </div>
