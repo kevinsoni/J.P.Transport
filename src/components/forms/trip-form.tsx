@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { createTrip, updateTrip } from '@/app/(dashboard)/trips/actions'
-import { createParty } from '@/app/(dashboard)/parties/actions'
-import { createTruck } from '@/app/(dashboard)/trucks/actions'
+import { createParty, deleteParty } from '@/app/(dashboard)/parties/actions'
+import { createTruck, deleteTruck } from '@/app/(dashboard)/trucks/actions'
 import { Truck, Party, Trip } from '@/types/db'
 
 type TruckWithOwner = Truck & {
@@ -35,6 +35,13 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
     settlement_party_id: editData?.settlement_party_id || ''
   })
   const [selectedTruck, setSelectedTruck] = useState(editData?.truck_id || '')
+  const [selectedDate, setSelectedDate] = useState(editData?.trip_date || new Date().toISOString().split('T')[0])
+
+  const getDayName = (dateString: string) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { weekday: 'long' })
+  }
   const [amounts, setAmounts] = useState({
     rate: editData?.rate || 0,
     payment_weight: editData?.payment_weight || 0,
@@ -162,6 +169,21 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
     return newTruck.id
   }
 
+  const handleDeleteParty = async (id: string): Promise<void> => {
+    await deleteParty(id)
+    setPartiesList(prev => prev.filter(p => p.id !== id))
+    if (selectedParties.consignor_id === id) setSelectedParties(prev => ({ ...prev, consignor_id: '' }))
+    if (selectedParties.consignor2_id === id) setSelectedParties(prev => ({ ...prev, consignor2_id: '' }))
+    if (selectedParties.consignee1_id === id) setSelectedParties(prev => ({ ...prev, consignee1_id: '' }))
+    if (selectedParties.settlement_party_id === id) setSelectedParties(prev => ({ ...prev, settlement_party_id: '' }))
+  }
+
+  const handleDeleteTruck = async (id: string): Promise<void> => {
+    await deleteTruck(id)
+    setTrucksList(prev => prev.filter(t => t.id !== id))
+    if (selectedTruck === id) setSelectedTruck('')
+  }
+
   const handlePartySelect = (field: string, value: string) => {
     setSelectedParties(prev => ({ ...prev, [field]: value }))
   }
@@ -172,6 +194,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
 
   return (
     <form ref={formRef} action={handleSubmit} className="space-y-6" onKeyDown={handleKeyDown}>
+      <input type="hidden" name="status" value="OUT" />
       {/* Basic Trip Information */}
       <Card>
         <CardHeader>
@@ -181,12 +204,21 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="trip_date">Trip Date *</Label>
-              <Input
-                type="date"
-                name="trip_date"
-                defaultValue={editData?.trip_date || new Date().toISOString().split('T')[0]}
-                required
-              />
+              <div className="relative">
+                <Input
+                  type="date"
+                  name="trip_date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  required
+                  className="pr-20"
+                />
+                {selectedDate && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded border">
+                    {getDayName(selectedDate)}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="truck_id">Truck Number *</Label>
@@ -196,6 +228,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 placeholder="Select or add truck number"
                 onSelect={(value) => setSelectedTruck(value)}
                 onAddNew={(truckNo) => handleAddTruck(truckNo)}
+                onDelete={handleDeleteTruck}
                 partyType="truck"
                 name="truck_id"
               />
@@ -252,6 +285,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 placeholder="Select or add consignor 1"
                 onSelect={(value) => handlePartySelect('consignor_id', value)}
                 onAddNew={(name) => handleAddParty(name, 'consignor')}
+                onDelete={handleDeleteParty}
                 partyType="consignor"
                 name="consignor_id"
               />
@@ -264,6 +298,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 placeholder="Select or add consignor 2"
                 onSelect={(value) => handlePartySelect('consignor2_id', value)}
                 onAddNew={(name) => handleAddParty(name, 'consignor')}
+                onDelete={handleDeleteParty}
                 partyType="consignor"
                 name="consignor2_id"
               />
@@ -276,6 +311,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 placeholder="Select or add consignee"
                 onSelect={(value) => handlePartySelect('consignee1_id', value)}
                 onAddNew={(name) => handleAddParty(name, 'consignee')}
+                onDelete={handleDeleteParty}
                 partyType="consignee"
                 name="consignee1_id"
               />
@@ -288,6 +324,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 placeholder="Select or add truck owner"
                 onSelect={(value) => handlePartySelect('settlement_party_id', value)}
                 onAddNew={(name) => handleAddParty(name, 'owner')}
+                onDelete={handleDeleteParty}
                 partyType="owner"
                 name="settlement_party_id"
               />

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Check, ChevronDown, Plus } from 'lucide-react'
+import { Check, ChevronDown, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -17,6 +17,7 @@ interface SearchableSelectProps {
   placeholder: string
   onSelect: (value: string) => void
   onAddNew: (name: string, type: string) => Promise<string>
+  onDelete?: (id: string) => Promise<void>
   partyType: string
   name: string
 }
@@ -27,6 +28,7 @@ export function SearchableSelect({
   placeholder, 
   onSelect, 
   onAddNew, 
+  onDelete,
   partyType,
   name 
 }: SearchableSelectProps) {
@@ -155,10 +157,21 @@ export function SearchableSelect({
           <div className="p-2">
             <Input
               ref={inputRef}
-              placeholder="Search or type new name..."
+              placeholder={partyType === 'truck' ? 'Search or type truck number...' : 'Search or type new name...'}
               value={search}
               onChange={(e) => {
-                setSearch(e.target.value)
+                let value = e.target.value
+                if (partyType === 'truck') {
+                  // Format truck number: GJ01AB1234 -> GJ-01-AB-1234
+                  value = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+                  if (value.length > 0) {
+                    value = value.replace(/^([A-Z]{2})(\d{2})([A-Z]{2})(\d{4}).*/, '$1-$2-$3-$4')
+                      .replace(/^([A-Z]{2})(\d{2})([A-Z]{2})(\d{1,3})$/, '$1-$2-$3-$4')
+                      .replace(/^([A-Z]{2})(\d{2})([A-Z]{1,2})$/, '$1-$2-$3')
+                      .replace(/^([A-Z]{2})(\d{1,2})$/, '$1-$2')
+                  }
+                }
+                setSearch(value)
                 setHighlightedIndex(0)
               }}
               onKeyDown={handleKeyDown}
@@ -168,38 +181,55 @@ export function SearchableSelect({
           
           <div className="max-h-60 overflow-auto">
             {allOptions.map((option, index) => (
-              <button
+              <div
                 key={option.id}
-                type="button"
                 className={cn(
-                  "w-full px-3 py-2 text-left flex items-center",
+                  "w-full px-3 py-2 flex items-center justify-between",
                   highlightedIndex === index ? "bg-blue-100" : "hover:bg-gray-100",
                   option.id === 'add-new' ? "text-blue-600" : ""
                 )}
-                onClick={() => {
-                  if (option.id === 'add-new') {
-                    handleAddNew()
-                  } else {
-                    onSelect(option.id)
-                    setOpen(false)
-                    setSearch('')
-                    setHighlightedIndex(-1)
-                  }
-                }}
-                disabled={option.id === 'add-new' && isAdding}
               >
-                {option.id === 'add-new' ? (
-                  <Plus className="mr-2 h-4 w-4" />
-                ) : (
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
+                <button
+                  type="button"
+                  className="flex items-center flex-1 text-left"
+                  onClick={() => {
+                    if (option.id === 'add-new') {
+                      handleAddNew()
+                    } else {
+                      onSelect(option.id)
+                      setOpen(false)
+                      setSearch('')
+                      setHighlightedIndex(-1)
+                    }
+                  }}
+                  disabled={option.id === 'add-new' && isAdding}
+                >
+                  {option.id === 'add-new' ? (
+                    <Plus className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === option.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  )}
+                  {option.id === 'add-new' && isAdding ? 'Adding...' : option.name}
+                </button>
+                {option.id !== 'add-new' && onDelete && (
+                  <button
+                    type="button"
+                    className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDelete(option.id)
+                    }}
+                    title="Delete"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 )}
-                {option.id === 'add-new' && isAdding ? 'Adding...' : option.name}
-              </button>
+              </div>
             ))}
           </div>
         </div>
