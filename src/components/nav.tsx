@@ -117,12 +117,15 @@ export function Navigation() {
       )}
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:bg-white lg:border-r lg:border-gray-200">
-        <div className="flex items-center px-6 py-4 border-b border-gray-200">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-            <Truck className="w-5 h-5 text-white" />
+      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:bg-white/80 lg:backdrop-blur-xl lg:border-r lg:border-gray-200/50 lg:shadow-xl">
+        <div className="flex items-center px-6 py-4 border-b border-gray-200/50">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center mr-3 shadow-lg">
+            <Truck className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-semibold">J.P. Transport</h1>
+          <div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">J.P. Transport</h1>
+            <p className="text-xs text-gray-500">Management System</p>
+          </div>
         </div>
         
         <nav className="flex-1 px-4 py-4 space-y-2">
@@ -133,13 +136,16 @@ export function Navigation() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                  'flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group',
                   pathname === item.href
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
+                    : 'text-gray-600 hover:bg-white/60 hover:text-blue-600 hover:shadow-md'
                 )}
               >
-                <Icon className="w-5 h-5 mr-3" />
+                <Icon className={cn(
+                  'w-5 h-5 mr-3 transition-transform duration-200',
+                  pathname === item.href ? 'scale-110' : 'group-hover:scale-105'
+                )} />
                 {item.name}
               </Link>
             )

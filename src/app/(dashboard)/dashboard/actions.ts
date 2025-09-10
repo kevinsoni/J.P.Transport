@@ -144,3 +144,26 @@ export async function getTopConsignees() {
     return []
   }
 }
+
+export async function getTripsForPayment() {
+  const supabase = createClient()
+
+  try {
+    const { data: trips, error } = await supabase
+      .from('trips')
+      .select(`
+        *,
+        truck:trucks(truck_no),
+        consignor:parties!consignor_id(name),
+        consignee1:parties!consignee1_id(name)
+      `)
+      .neq('payment_status', 'PAID')
+      .order('trip_date', { ascending: false })
+
+    if (error) throw error
+    return trips || []
+  } catch (error) {
+    console.error('Error fetching trips for payment:', error)
+    return []
+  }
+}

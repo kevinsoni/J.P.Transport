@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { X, CreditCard, Calendar, DollarSign, Truck, MapPin, User } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, CreditCard, Calendar, Truck, MapPin, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,6 +23,32 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('')
   const [amount, setAmount] = useState('')
+
+  // Reset form when popup opens
+  useEffect(() => {
+    if (isOpen) {
+      setPaymentMethod('')
+      setAmount('')
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'hidden'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -51,8 +77,8 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] m-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[100vh] overflow-hidden m-4">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
           <div className="flex items-center justify-between">
@@ -147,7 +173,7 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
               <div className="space-y-2">
                 <Label htmlFor="amount" className="text-sm font-medium">Amount *</Label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">₹</span>
                   <Input
                     type="number"
                     name="amount"
@@ -168,11 +194,11 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
 
             <div className="space-y-2">
               <Label htmlFor="method" className="text-sm font-medium">Payment Method *</Label>
-              <Select name="method" value={paymentMethod} onValueChange={setPaymentMethod} required>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod} required>
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Choose payment method" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10000]">
                   <SelectItem value="CASH">
                     <div className="flex items-center gap-2">
                       <span>💵</span>
@@ -199,6 +225,7 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <input type="hidden" name="method" value={paymentMethod} />
             </div>
 
             {(paymentMethod === 'UPI' || paymentMethod === 'BANK') && (

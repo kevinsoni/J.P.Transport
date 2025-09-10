@@ -34,6 +34,10 @@ import { deleteTrip } from '@/app/(dashboard)/trips/actions'
 interface TripsTableProps {
   trips: TripWithRelations[]
   loading?: boolean
+  selectedTrip?: TripWithRelations | null
+  setSelectedTrip?: (trip: TripWithRelations | null) => void
+  isPaymentPopupOpen?: boolean
+  setIsPaymentPopupOpen?: (open: boolean) => void
 }
 
 const getStatusColor = (status: string) => {
@@ -55,11 +59,22 @@ const getPaymentStatusColor = (status: string) => {
   }
 }
 
-export function TripsTable({ trips, loading = false }: TripsTableProps) {
+export function TripsTable({ 
+  trips, 
+  loading = false, 
+  selectedTrip: externalSelectedTrip, 
+  setSelectedTrip: externalSetSelectedTrip, 
+  isPaymentPopupOpen: externalIsPaymentPopupOpen, 
+  setIsPaymentPopupOpen: externalSetIsPaymentPopupOpen 
+}: TripsTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
-  const [selectedTrip, setSelectedTrip] = useState<TripWithRelations | null>(null)
-  const [isPaymentPopupOpen, setIsPaymentPopupOpen] = useState(false)
+  
+  // Use external state if provided, otherwise use internal state
+  const selectedTrip = externalSelectedTrip ?? null
+  const setSelectedTrip = externalSetSelectedTrip ?? (() => {})
+  const isPaymentPopupOpen = externalIsPaymentPopupOpen ?? false
+  const setIsPaymentPopupOpen = externalSetIsPaymentPopupOpen ?? (() => {})
   const itemsPerPage = 20
   
   const handleSort = (key: string) => {
@@ -154,25 +169,123 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center px-6 py-4">
+        <div className="flex items-center space-x-4">
+          <span className="text-sm font-medium text-gray-700">
             Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedTrips.length)} of {sortedTrips.length} trips
+          </span>
+          <div className="h-4 w-px bg-gray-300"></div>
+          <span className="text-xs text-gray-500">
+            {Math.ceil(sortedTrips.length / itemsPerPage)} pages total
           </span>
         </div>
         
-        <Button onClick={handleExport} variant="outline" size="sm">
+        <Button onClick={handleExport} variant="outline" size="sm" className="border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 shadow-sm hover:shadow-md transition-all duration-200">
           <Download className="w-4 h-4 mr-2" />
           Export CSV
         </Button>
       </div>
 
-      <div className="rounded-md border">
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-4 px-4">
+        {paginatedTrips.map((trip, index) => (
+          <div key={trip.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xs font-semibold text-blue-600">
+                  {startIndex + index + 1}
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">{formatDate(trip.trip_date)}</div>
+                  <div className="text-sm text-gray-500">{trip.truck?.truck_no}</div>
+                </div>
+              </div>
+              <Badge className={`${getPaymentStatusColor(trip.payment_status)} px-3 py-1 text-xs font-semibold rounded-full`}>
+                {trip.payment_status}
+              </Badge>
+            </div>
+            
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Center:</span>
+                <span className="font-medium">{trip.center_city || '-'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">L/R No:</span>
+                <span className="font-medium">{trip.lr_no || '-'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Consignee:</span>
+                <span className="font-medium">{trip.consignee1?.name || '-'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Weight:</span>
+                <span className="font-medium">{trip.payment_weight ? `${trip.payment_weight} MT` : '-'}</span>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="text-center">
+                <div className="text-xs text-gray-500">Total</div>
+                <div className="font-bold text-gray-900">{formatCurrency(trip.total_amount)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-500">Received</div>
+                <div className="font-bold text-green-600">{formatCurrency(trip.amount_received)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-500">Balance</div>
+                <div className="font-bold text-red-600">{formatCurrency(trip.balance_due)}</div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-2">
+                <Button variant="ghost" size="sm" asChild className="hover:bg-blue-50 hover:text-blue-600">
+                  <Link href={`/trips/${trip.id}`}>
+                    <Eye className="w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild className="hover:bg-green-50 hover:text-green-600">
+                  <Link href={`/trips/${trip.id}/edit`}>
+                    <Edit className="w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="hover:bg-purple-50 hover:text-purple-600"
+                  onClick={() => {
+                    setSelectedTrip(trip)
+                    setIsPaymentPopupOpen(true)
+                  }}
+                >
+                  <CreditCard className="w-4 h-4" />
+                </Button>
+              </div>
+              <DeleteConfirmationDialog 
+                itemName={`Trip ${trip.lr_no || trip.id}`}
+                itemType="trip"
+                onConfirm={async () => {
+                  try {
+                    await deleteTrip(trip.id)
+                  } catch (error) {
+                    console.error('Error deleting trip:', error)
+                  }
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-hidden">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[60px]">Sr No.</TableHead>
+          <TableHeader className="bg-gray-50/80">
+            <TableRow className="border-b border-gray-200/50">
+              <TableHead className="w-[60px] font-semibold text-gray-700">Sr No.</TableHead>
               <SortableTableHeader sortKey="date" currentSort={sortConfig} onSort={handleSort}>
                 Date
               </SortableTableHeader>
@@ -221,9 +334,11 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
               </TableRow>
             ) : (
               paginatedTrips.map((trip, index) => (
-                <TableRow key={trip.id}>
-                  <TableCell className="text-center text-sm text-gray-600">
-                    {startIndex + index + 1}
+                <TableRow key={trip.id} className="hover:bg-blue-50/50 transition-colors duration-150 border-b border-gray-100/50">
+                  <TableCell className="text-center text-sm font-medium text-gray-700">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold">
+                      {startIndex + index + 1}
+                    </div>
                   </TableCell>
                   <TableCell className="font-medium">
                     {formatDate(trip.trip_date)}
@@ -245,18 +360,18 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                   <TableCell>{formatCurrency(trip.amount_received)}</TableCell>
                   <TableCell>{formatCurrency(trip.balance_due)}</TableCell>
                   <TableCell>
-                    <Badge className={getPaymentStatusColor(trip.payment_status)}>
+                    <Badge className={`${getPaymentStatusColor(trip.payment_status)} px-3 py-1 text-xs font-semibold rounded-full`}>
                       {trip.payment_status}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-1">
-                      <Button variant="ghost" size="sm" asChild>
+                      <Button variant="ghost" size="sm" asChild className="hover:bg-blue-50 hover:text-blue-600 transition-colors duration-150">
                         <Link href={`/trips/${trip.id}`}>
                           <Eye className="w-4 h-4" />
                         </Link>
                       </Button>
-                      <Button variant="ghost" size="sm" asChild>
+                      <Button variant="ghost" size="sm" asChild className="hover:bg-green-50 hover:text-green-600 transition-colors duration-150">
                         <Link href={`/trips/${trip.id}/edit`}>
                           <Edit className="w-4 h-4" />
                         </Link>
@@ -264,6 +379,7 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                       <Button 
                         variant="ghost" 
                         size="sm"
+                        className="hover:bg-purple-50 hover:text-purple-600 transition-colors duration-150"
                         onClick={() => {
                           setSelectedTrip(trip)
                           setIsPaymentPopupOpen(true)
@@ -292,26 +408,48 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/50">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
+            className="border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 disabled:opacity-50 transition-all duration-200"
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Previous
           </Button>
           
-          <span className="text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex items-center gap-1 ml-4">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = i + 1
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded-full text-xs font-semibold transition-all duration-200 ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
+            className="border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 disabled:opacity-50 transition-all duration-200"
           >
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
@@ -319,19 +457,6 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
         </div>
       )}
 
-      {selectedTrip && (
-        <PaymentPopup
-          trip={selectedTrip}
-          isOpen={isPaymentPopupOpen}
-          onClose={() => {
-            setIsPaymentPopupOpen(false)
-            setSelectedTrip(null)
-          }}
-          onSuccess={() => {
-            window.location.reload()
-          }}
-        />
-      )}
     </div>
   )
 }
