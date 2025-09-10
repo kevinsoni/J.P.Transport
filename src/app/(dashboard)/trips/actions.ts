@@ -130,7 +130,7 @@ export async function getTripById(id: string) {
         ),
         consignor:parties!consignor_id(name, phone, address, city),
         consignee1:parties!consignee1_id(name, phone, address, city),
-        consignee2:parties!consignee2_id(name, phone, address, city),
+        settlement_party:parties!settlement_party_id(name, phone, address, city),
         payments(
           id,
           payment_date,
@@ -157,41 +157,27 @@ export async function getTripById(id: string) {
 export async function updateTrip(id: string, formData: FormData) {
   const supabase = createClient()
 
-  // Convert form data to proper types (similar to createTrip but for updates)
+  // Convert form data to proper types
   const rawData = {
     trip_date: formData.get('trip_date') as string,
-    status: formData.get('status') as 'IN' | 'OUT' | 'COMPLETED' | 'CANCELLED',
+    status: (formData.get('status') as 'IN' | 'OUT' | 'COMPLETED' | 'CANCELLED') || 'OUT',
     truck_id: formData.get('truck_id') as string,
     center_city: formData.get('center_city') as string || null,
-    origin_city: formData.get('origin_city') as string || null,
-    destination_city: formData.get('destination_city') as string || null,
     cargo_details: formData.get('cargo_details') as string || null,
-    transport_details: formData.get('transport_details') as string || null,
     consignor_id: formData.get('consignor_id') as string,
     consignee1_id: formData.get('consignee1_id') as string,
-    consignee2_id: formData.get('consignee2_id') as string || null,
     lr_no: formData.get('lr_no') as string || null,
-    invoice_no: formData.get('invoice_no') as string || null,
-    driver_name: formData.get('driver_name') as string || null,
-    driver_phone: formData.get('driver_phone') as string || null,
-    weight_mt: formData.get('weight_mt') ? parseFloat(formData.get('weight_mt') as string) : null,
-    no_of_packages: formData.get('no_of_packages') ? parseInt(formData.get('no_of_packages') as string) : null,
-    route_notes: formData.get('route_notes') as string || null,
-    remarks: formData.get('remarks') as string || null,
-    freight_amount: parseFloat(formData.get('freight_amount') as string) || 0,
-    rto_charges: parseFloat(formData.get('rto_charges') as string) || 0,
-    toll_charges: parseFloat(formData.get('toll_charges') as string) || 0,
-    loading_unloading: parseFloat(formData.get('loading_unloading') as string) || 0,
-    diesel_advance: parseFloat(formData.get('diesel_advance') as string) || 0,
-    other_charges: parseFloat(formData.get('other_charges') as string) || 0,
-    tax_percent: parseFloat(formData.get('tax_percent') as string) || 0,
-    material_type: formData.get('material_type') as string || null,
-    e_way_bill_no: formData.get('e_way_bill_no') as string || null,
-    payment_terms: formData.get('payment_terms') as string || null,
-    due_date: formData.get('due_date') as string || null,
-    km_distance: formData.get('km_distance') ? parseInt(formData.get('km_distance') as string) : null,
+    lr_name: formData.get('lr_name') as string || null,
+    loading_weight: formData.get('loading_weight') ? parseFloat(formData.get('loading_weight') as string) : null,
+    payment_weight: formData.get('payment_weight') ? parseFloat(formData.get('payment_weight') as string) : null,
+    rate: parseFloat(formData.get('rate') as string) || 0,
+    tp_charge_consignor1: parseFloat(formData.get('tp_charge_consignor1') as string) || 0,
+    tp_charge_consignor2: parseFloat(formData.get('tp_charge_consignor2') as string) || 0,
+    rto_charge_gujarat: parseFloat(formData.get('rto_charge_gujarat') as string) || 0,
+    rto_charge_maharashtra: parseFloat(formData.get('rto_charge_maharashtra') as string) || 0,
+    lr_amount: parseFloat(formData.get('lr_amount') as string) || 0,
+    driver_cash_received: parseFloat(formData.get('driver_cash_received') as string) || 0,
     settlement_party_id: formData.get('settlement_party_id') as string || null,
-    rto_details: formData.get('rto_details') as string || null,
   }
 
   // Validate the data
@@ -207,8 +193,8 @@ export async function updateTrip(id: string, formData: FormData) {
     throw new Error('Failed to update trip')
   }
 
-  revalidatePath(`/trips/${id}`)
-  redirect(`/trips/${id}`)
+  revalidatePath('/trips')
+  redirect('/trips')
 }
 
 export async function deleteTrip(id: string) {

@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table'
 import { SortableTableHeader } from '@/components/ui/sortable-table-header'
 import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog'
+import { PaymentPopup } from '@/components/forms/payment-popup'
 import type { TripWithRelations } from '@/types/db'
 import { exportTripsToCSV } from '@/lib/csv'
 import { deleteTrip } from '@/app/(dashboard)/trips/actions'
@@ -57,6 +58,8 @@ const getPaymentStatusColor = (status: string) => {
 export function TripsTable({ trips, loading = false }: TripsTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const [selectedTrip, setSelectedTrip] = useState<TripWithRelations | null>(null)
+  const [isPaymentPopupOpen, setIsPaymentPopupOpen] = useState(false)
   const itemsPerPage = 20
   
   const handleSort = (key: string) => {
@@ -85,17 +88,18 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
           aValue = a.truck?.truck_no || ''
           bValue = b.truck?.truck_no || ''
           break
-        case 'status':
-          aValue = a.status
-          bValue = b.status
+
+        case 'center':
+          aValue = a.center_city || ''
+          bValue = b.center_city || ''
           break
-        case 'route':
-          aValue = a.origin_city && a.destination_city 
-            ? `${a.origin_city} → ${a.destination_city}`
-            : a.center_city || ''
-          bValue = b.origin_city && b.destination_city 
-            ? `${b.origin_city} → ${b.destination_city}`
-            : b.center_city || ''
+        case 'lr':
+          aValue = a.lr_no || ''
+          bValue = b.lr_no || ''
+          break
+        case 'weight':
+          aValue = a.payment_weight || 0
+          bValue = b.payment_weight || 0
           break
         case 'consignee':
           aValue = a.consignee1?.name || ''
@@ -175,14 +179,18 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
               <SortableTableHeader sortKey="truck" currentSort={sortConfig} onSort={handleSort}>
                 Truck No.
               </SortableTableHeader>
-              <SortableTableHeader sortKey="status" currentSort={sortConfig} onSort={handleSort}>
-                Status
+
+              <SortableTableHeader sortKey="center" currentSort={sortConfig} onSort={handleSort}>
+                Center
               </SortableTableHeader>
-              <SortableTableHeader sortKey="route" currentSort={sortConfig} onSort={handleSort}>
-                Route
+              <SortableTableHeader sortKey="lr" currentSort={sortConfig} onSort={handleSort}>
+                L/R No.
               </SortableTableHeader>
               <SortableTableHeader sortKey="consignee" currentSort={sortConfig} onSort={handleSort}>
                 Consignee
+              </SortableTableHeader>
+              <SortableTableHeader sortKey="weight" currentSort={sortConfig} onSort={handleSort}>
+                Weight
               </SortableTableHeader>
               <SortableTableHeader sortKey="total" currentSort={sortConfig} onSort={handleSort}>
                 Total
@@ -221,19 +229,17 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                     {formatDate(trip.trip_date)}
                   </TableCell>
                   <TableCell>{trip.truck?.truck_no || '-'}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(trip.status)}>
-                      {trip.status}
-                    </Badge>
+                  <TableCell className="max-w-[150px] truncate">
+                    {trip.center_city || '-'}
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    {trip.origin_city && trip.destination_city 
-                      ? `${trip.origin_city} → ${trip.destination_city}`
-                      : trip.center_city || '-'
-                    }
+                  <TableCell>
+                    {trip.lr_no || '-'}
                   </TableCell>
                   <TableCell className="max-w-[150px] truncate">
                     {trip.consignee1?.name || '-'}
+                  </TableCell>
+                  <TableCell>
+                    {trip.payment_weight ? `${trip.payment_weight} MT` : '-'}
                   </TableCell>
                   <TableCell>{formatCurrency(trip.total_amount)}</TableCell>
                   <TableCell>{formatCurrency(trip.amount_received)}</TableCell>
@@ -255,10 +261,15 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
                           <Edit className="w-4 h-4" />
                         </Link>
                       </Button>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/payments/new?tripId=${trip.id}`}>
-                          <CreditCard className="w-4 h-4" />
-                        </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTrip(trip)
+                          setIsPaymentPopupOpen(true)
+                        }}
+                      >
+                        <CreditCard className="w-4 h-4" />
                       </Button>
                       <DeleteConfirmationDialog 
                         itemName={`Trip ${trip.lr_no || trip.invoice_no || trip.id}`}
@@ -306,6 +317,20 @@ export function TripsTable({ trips, loading = false }: TripsTableProps) {
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
+      )}
+
+      {selectedTrip && (
+        <PaymentPopup
+          trip={selectedTrip}
+          isOpen={isPaymentPopupOpen}
+          onClose={() => {
+            setIsPaymentPopupOpen(false)
+            setSelectedTrip(null)
+          }}
+          onSuccess={() => {
+            window.location.reload()
+          }}
+        />
       )}
     </div>
   )

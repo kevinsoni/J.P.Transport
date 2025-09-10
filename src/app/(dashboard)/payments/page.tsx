@@ -1,13 +1,40 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PaymentsTable } from '@/components/tables/payments-table'
+import { PaymentFilters, type PaymentFilters as PaymentFiltersType } from '@/components/filters/payment-filters'
 import { getPayments } from './actions'
 
-export default async function PaymentsPage() {
-  const payments = await getPayments()
+export default function PaymentsPage() {
+  const [payments, setPayments] = useState<any[]>([])
+  const [filters, setFilters] = useState<PaymentFiltersType>({
+    dateFrom: '',
+    dateTo: '',
+    method: 'ALL',
+    minAmount: '',
+    maxAmount: '',
+    truckNo: ''
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const data = await getPayments()
+        setPayments(data)
+      } catch (error) {
+        console.error('Error fetching payments:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPayments()
+  }, [])
   
   return (
     <div>
@@ -24,20 +51,30 @@ export default async function PaymentsPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment Records</CardTitle>
-          <CardDescription>
-            {payments.length > 0 
-              ? `Showing ${payments.length} payment record${payments.length === 1 ? '' : 's'}`
-              : 'No payments recorded yet'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PaymentsTable payments={payments} />
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <PaymentFilters onFiltersChange={setFilters} />
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Records</CardTitle>
+            <CardDescription>
+              {loading ? 'Loading...' : payments.length > 0 
+                ? `Showing ${payments.length} payment record${payments.length === 1 ? '' : 's'}`
+                : 'No payments recorded yet'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            ) : (
+              <PaymentsTable payments={payments} filters={filters} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

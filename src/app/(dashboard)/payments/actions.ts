@@ -43,11 +43,10 @@ export async function getPayments() {
         *,
         trip:trips(
           lr_no,
-          invoice_no,
           trip_date,
-          origin_city,
-          destination_city,
+          center_city,
           consignor:parties!consignor_id(name),
+          consignee1:parties!consignee1_id(name),
           truck:trucks(truck_no)
         )
       `)
@@ -95,11 +94,10 @@ export async function getPaymentById(id: string) {
         *,
         trip:trips(
           lr_no,
-          invoice_no,
           trip_date,
-          origin_city,
-          destination_city,
+          center_city,
           consignor:parties!consignor_id(name),
+          consignee1:parties!consignee1_id(name),
           truck:trucks(truck_no)
         )
       `)

@@ -357,6 +357,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
+                defaultValue={editData?.rate || ''}
                 onChange={(e) => handleAmountChange('rate', e.target.value)}
                 required
               />
@@ -368,6 +369,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
+                defaultValue={editData?.tp_charge_consignor1 || ''}
                 onChange={(e) => handleAmountChange('tp_charge_consignor1', e.target.value)}
               />
             </div>
@@ -378,6 +380,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
+                defaultValue={editData?.tp_charge_consignor2 || ''}
                 onChange={(e) => handleAmountChange('tp_charge_consignor2', e.target.value)}
               />
             </div>
@@ -388,6 +391,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
+                defaultValue={editData?.rto_charge_gujarat || ''}
                 onChange={(e) => handleAmountChange('rto_charge_gujarat', e.target.value)}
               />
             </div>
@@ -398,6 +402,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
+                defaultValue={editData?.rto_charge_maharashtra || ''}
                 onChange={(e) => handleAmountChange('rto_charge_maharashtra', e.target.value)}
               />
             </div>
@@ -453,6 +458,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
+                defaultValue={editData?.lr_amount || ''}
                 onChange={(e) => handleAmountChange('lr_amount', e.target.value)}
               />
             </div>
@@ -463,6 +469,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
+                defaultValue={editData?.driver_cash_received || ''}
                 onChange={(e) => handleAmountChange('driver_cash_received', e.target.value)}
               />
             </div>
@@ -501,6 +508,9 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
           className="flex-1" 
           disabled={isSubmitting}
         >
+          {isSubmitting && (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+          )}
           {isSubmitting ? (tripId ? 'Updating Trip...' : 'Creating Trip...') : (tripId ? 'Update Trip' : 'Create Trip')}
         </Button>
       </div>

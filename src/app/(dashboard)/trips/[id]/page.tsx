@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Edit, CreditCard, FileText } from 'lucide-react'
 import { notFound } from 'next/navigation'
@@ -5,15 +8,19 @@ import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { getTripById } from '../actions'
+import { PaymentPopup } from '@/components/forms/payment-popup'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import type { TripWithRelations } from '@/types/db'
 
 interface TripDetailsPageProps {
   params: { id: string }
+  trip: TripWithRelations
 }
 
-export default async function TripDetailsPage({ params }: TripDetailsPageProps) {
-  const trip = await getTripById(params.id)
+export { default } from './trip-details-wrapper'
+
+function TripDetailsPage({ params, trip }: TripDetailsPageProps) {
+  const [isPaymentPopupOpen, setIsPaymentPopupOpen] = useState(false)
   
   if (!trip) {
     notFound()
@@ -50,11 +57,9 @@ export default async function TripDetailsPage({ params }: TripDetailsPageProps) 
           <p className="text-gray-600">Trip ID: {params.id}</p>
         </div>
         <div className="flex gap-2">
-          <Button asChild>
-            <Link href={`/payments/new?tripId=${params.id}`}>
-              <CreditCard className="w-4 h-4 mr-2" />
-              Add Payment
-            </Link>
+          <Button onClick={() => setIsPaymentPopupOpen(true)}>
+            <CreditCard className="w-4 h-4 mr-2" />
+            Add Payment
           </Button>
           <Button variant="outline" asChild>
             <Link href={`/trips/${params.id}/edit`}>
@@ -85,45 +90,60 @@ export default async function TripDetailsPage({ params }: TripDetailsPageProps) 
                     <p className="text-base">{formatDate(trip.trip_date)}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Truck</label>
+                    <label className="text-sm font-medium text-gray-500">Truck Number</label>
                     <p className="text-base">{trip.truck?.truck_no || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Driver</label>
-                    <p className="text-base">
-                      {trip.driver_name || 'N/A'}
-                      {trip.driver_phone && ` (${trip.driver_phone})`}
-                    </p>
+                    <label className="text-sm font-medium text-gray-500">Center</label>
+                    <p className="text-base">{trip.center_city || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">LR Number</label>
-                    <p className="text-base">{trip.lr_no || 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-500">Cargo</label>
+                    <p className="text-base">{trip.cargo_details || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Route</label>
-                    <p className="text-base">
-                      {trip.origin_city && trip.destination_city 
-                        ? `${trip.origin_city} → ${trip.destination_city}`
-                        : trip.center_city || 'N/A'
-                      }
-                    </p>
+                    <label className="text-sm font-medium text-gray-500">Loading Weight</label>
+                    <p className="text-base">{trip.loading_weight ? `${trip.loading_weight} MT` : 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Cargo</label>
-                    <p className="text-base">
-                      {trip.cargo_details || trip.material_type || 'N/A'}
-                      {trip.weight_mt && ` (${trip.weight_mt} MT)`}
-                    </p>
+                    <label className="text-sm font-medium text-gray-500">Payment Weight</label>
+                    <p className="text-base">{trip.payment_weight ? `${trip.payment_weight} MT` : 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Packages</label>
-                    <p className="text-base">{trip.no_of_packages ? `${trip.no_of_packages} packages` : 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-500">L/R Number</label>
+                    <p className="text-base">{trip.lr_no || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Invoice</label>
-                    <p className="text-base">{trip.invoice_no || 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-500">L/R Name</label>
+                    <p className="text-base">{trip.lr_name || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Parties</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Consignor</label>
+                    <p className="text-base">{trip.consignor?.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Consignee</label>
+                    <p className="text-base">{trip.consignee1?.name || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Truck Owner</label>
+                    <p className="text-base">{trip.settlement_party?.name || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -168,43 +188,43 @@ export default async function TripDetailsPage({ params }: TripDetailsPageProps) 
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span>Freight Amount</span>
-                <span>{formatCurrency(trip.freight_amount)}</span>
+                <span>Rate Amount</span>
+                <span>{formatCurrency((trip.rate || 0) * (trip.payment_weight || 1))}</span>
               </div>
               <div className="flex justify-between">
-                <span>RTO Charges</span>
-                <span>{formatCurrency(trip.rto_charges)}</span>
+                <span>TP Charge Consignor 1</span>
+                <span>{formatCurrency(trip.tp_charge_consignor1 || 0)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Toll Charges</span>
-                <span>{formatCurrency(trip.toll_charges)}</span>
+                <span>TP Charge Consignor 2</span>
+                <span>{formatCurrency(trip.tp_charge_consignor2 || 0)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Loading/Unloading</span>
-                <span>{formatCurrency(trip.loading_unloading)}</span>
+                <span>RTO Charge Gujarat</span>
+                <span>{formatCurrency(trip.rto_charge_gujarat || 0)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Other Charges</span>
-                <span>{formatCurrency(trip.other_charges)}</span>
-              </div>
-              <div className="flex justify-between text-red-600">
-                <span>Diesel Advance</span>
-                <span>-{formatCurrency(trip.diesel_advance)}</span>
-              </div>
-              <div className="border-t pt-2">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>{formatCurrency(trip.freight_amount + trip.rto_charges + trip.toll_charges + trip.loading_unloading + trip.other_charges - trip.diesel_advance)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax ({trip.tax_percent}%)</span>
-                  <span>{formatCurrency((trip.freight_amount + trip.rto_charges + trip.toll_charges + trip.loading_unloading + trip.other_charges - trip.diesel_advance) * trip.tax_percent / 100)}</span>
-                </div>
+                <span>RTO Charge Maharashtra</span>
+                <span>{formatCurrency(trip.rto_charge_maharashtra || 0)}</span>
               </div>
               <div className="border-t pt-2 font-semibold">
                 <div className="flex justify-between text-lg">
                   <span>Total Amount</span>
                   <span>{formatCurrency(trip.total_amount)}</span>
+                </div>
+                <div className="flex justify-between text-red-600">
+                  <span>Less: L/R Amount</span>
+                  <span>-{formatCurrency(trip.lr_amount || 0)}</span>
+                </div>
+                <div className="flex justify-between text-red-600">
+                  <span>Less: Driver Cash</span>
+                  <span>-{formatCurrency(trip.driver_cash_received || 0)}</span>
+                </div>
+                <div className="border-t pt-2">
+                  <div className="flex justify-between text-lg font-bold text-green-600">
+                    <span>Bill Amount</span>
+                    <span>{formatCurrency(trip.total_amount - (trip.lr_amount || 0) - (trip.driver_cash_received || 0))}</span>
+                  </div>
                 </div>
                 <div className="flex justify-between text-green-600">
                   <span>Amount Received</span>
@@ -229,11 +249,13 @@ export default async function TripDetailsPage({ params }: TripDetailsPageProps) 
                   Edit Trip Details
                 </Link>
               </Button>
-              <Button className="w-full justify-start" variant="outline" asChild>
-                <Link href={`/payments/new?tripId=${params.id}`}>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Record Payment
-                </Link>
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => setIsPaymentPopupOpen(true)}
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                Record Payment
               </Button>
               <Button className="w-full justify-start" variant="outline">
                 <FileText className="w-4 h-4 mr-2" />
@@ -243,6 +265,13 @@ export default async function TripDetailsPage({ params }: TripDetailsPageProps) 
           </Card>
         </div>
       </div>
+
+      <PaymentPopup
+        trip={trip}
+        isOpen={isPaymentPopupOpen}
+        onClose={() => setIsPaymentPopupOpen(false)}
+        onSuccess={() => window.location.reload()}
+      />
     </div>
   )
 }

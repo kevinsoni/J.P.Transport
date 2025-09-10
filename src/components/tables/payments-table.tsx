@@ -21,20 +21,27 @@ import { deletePayment } from '@/app/(dashboard)/payments/actions'
 type PaymentWithTrip = Payment & {
   trip: {
     lr_no: string | null
-    invoice_no: string | null
     trip_date: string
-    origin_city: string | null
-    destination_city: string | null
-    consignor: { name: string }[] | null
-    truck: { truck_no: string }[] | null
+    center_city: string | null
+    consignor: { name: string } | null
+    consignee1: { name: string } | null
+    truck: { truck_no: string } | null
   } | null
 }
 
 interface PaymentsTableProps {
   payments: PaymentWithTrip[]
+  filters?: {
+    dateFrom: string
+    dateTo: string
+    method: string
+    minAmount: string
+    maxAmount: string
+    truckNo: string
+  }
 }
 
-export function PaymentsTable({ payments }: PaymentsTableProps) {
+export function PaymentsTable({ payments, filters }: PaymentsTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
 
   const handleSort = (key: string) => {
@@ -46,10 +53,29 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
     })
   }
 
-  const sortedPayments = useMemo(() => {
-    if (!sortConfig) return payments
+  const filteredPayments = useMemo(() => {
+    if (!filters) return payments
+    
+    return payments.filter(payment => {
+      const paymentDate = new Date(payment.payment_date)
+      const fromDate = filters.dateFrom ? new Date(filters.dateFrom) : null
+      const toDate = filters.dateTo ? new Date(filters.dateTo) : null
+      
+      if (fromDate && paymentDate < fromDate) return false
+      if (toDate && paymentDate > toDate) return false
+      if (filters.method && filters.method !== 'ALL' && payment.method !== filters.method) return false
+      if (filters.minAmount && payment.amount < parseFloat(filters.minAmount)) return false
+      if (filters.maxAmount && payment.amount > parseFloat(filters.maxAmount)) return false
+      if (filters.truckNo && !payment.trip?.truck?.truck_no?.toLowerCase().includes(filters.truckNo.toLowerCase())) return false
+      
+      return true
+    })
+  }, [payments, filters])
 
-    return [...payments].sort((a, b) => {
+  const sortedPayments = useMemo(() => {
+    if (!sortConfig) return filteredPayments
+
+    return [...filteredPayments].sort((a, b) => {
       let aValue: any
       let bValue: any
 
@@ -82,7 +108,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
       }
       return 0
     })
-  }, [payments, sortConfig])
+  }, [filteredPayments, sortConfig])
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -131,18 +157,15 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
               Date
             </SortableTableHeader>
             <TableHead>Trip</TableHead>
-            <TableHead>Route</TableHead>
-            <TableHead>Consignor</TableHead>
+            <TableHead>Center</TableHead>
+            <TableHead>Consignee</TableHead>
             <SortableTableHeader sortKey="amount" currentSort={sortConfig} onSort={handleSort}>
               Amount
             </SortableTableHeader>
             <SortableTableHeader sortKey="method" currentSort={sortConfig} onSort={handleSort}>
               Method
             </SortableTableHeader>
-            <SortableTableHeader sortKey="reference" currentSort={sortConfig} onSort={handleSort}>
-              Reference
-            </SortableTableHeader>
-            <TableHead>Notes</TableHead>
+
             <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -160,23 +183,21 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium">
-                      {trip?.lr_no || trip?.invoice_no || 'N/A'}
+                      {trip?.lr_no || 'N/A'}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {trip?.truck?.[0]?.truck_no || 'N/A'}
+                      {trip?.truck?.truck_no || 'N/A'}
                     </span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="text-sm">
-                    {trip?.origin_city && trip?.destination_city
-                      ? `${trip.origin_city} → ${trip.destination_city}`
-                      : 'N/A'}
+                    {trip?.center_city || 'N/A'}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="text-sm">
-                    {trip?.consignor?.[0]?.name || 'N/A'}
+                    {trip?.consignee1?.name || 'N/A'}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -189,16 +210,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                     {payment.method}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  <span className="text-sm font-mono">
-                    {payment.reference_no || '-'}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-gray-600">
-                    {payment.notes || '-'}
-                  </span>
-                </TableCell>
+
                 <TableCell>
                   <div className="flex items-center space-x-1">
                     <Button variant="ghost" size="sm" asChild>
