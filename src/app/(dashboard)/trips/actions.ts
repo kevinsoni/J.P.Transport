@@ -19,6 +19,7 @@ export async function createTrip(formData: FormData) {
     consignee1_id: formData.get('consignee1_id') as string,
     lr_no: formData.get('lr_no') as string || null,
     lr_name: formData.get('lr_name') as string || null,
+    party_payment_name: formData.get('party_payment_name') as string || null,
     loading_weight: formData.get('loading_weight') ? parseFloat(formData.get('loading_weight') as string) : null,
     payment_weight: formData.get('payment_weight') ? parseFloat(formData.get('payment_weight') as string) : null,
     rate: parseFloat(formData.get('rate') as string) || 0,
@@ -125,12 +126,13 @@ export async function getTripById(id: string) {
       .select(`
         *,
         truck:trucks(
+          id,
           truck_no,
           capacity_tons
         ),
-        consignor:parties!consignor_id(name, phone, address, city),
-        consignee1:parties!consignee1_id(name, phone, address, city),
-        settlement_party:parties!settlement_party_id(name, phone, address, city),
+        consignor:parties!consignor_id(id, name, phone, address, city),
+        consignee1:parties!consignee1_id(id, name, phone, address, city),
+        settlement_party:parties!settlement_party_id(id, name, phone, address, city),
         payments(
           id,
           payment_date,
@@ -168,6 +170,7 @@ export async function updateTrip(id: string, formData: FormData) {
     consignee1_id: formData.get('consignee1_id') as string,
     lr_no: formData.get('lr_no') as string || null,
     lr_name: formData.get('lr_name') as string || null,
+    party_payment_name: formData.get('party_payment_name') as string || null,
     loading_weight: formData.get('loading_weight') ? parseFloat(formData.get('loading_weight') as string) : null,
     payment_weight: formData.get('payment_weight') ? parseFloat(formData.get('payment_weight') as string) : null,
     rate: parseFloat(formData.get('rate') as string) || 0,

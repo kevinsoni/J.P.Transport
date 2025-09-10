@@ -31,6 +31,7 @@ export const TripSchema = z.object({
   consignee1_id: z.string().min(1, 'Consignee is required'),
   lr_no: z.string().optional().nullable(),
   lr_name: z.string().optional().nullable(),
+  party_payment_name: z.string().optional().nullable(),
   loading_weight: z.number().min(0).optional().nullable(),
   payment_weight: z.number().min(0).optional().nullable(),
   rate: z.number().min(0).default(0),

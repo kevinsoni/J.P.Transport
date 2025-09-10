@@ -227,7 +227,7 @@ export function TripsTable({
             
             <div className="flex justify-between items-center mb-4 p-3 bg-gray-50 rounded-lg">
               <div className="text-center">
-                <div className="text-xs text-gray-500">Total</div>
+                <div className="text-xs text-gray-500">Bill Amount</div>
                 <div className="font-bold text-gray-900">{formatCurrency(trip.total_amount)}</div>
               </div>
               <div className="text-center">
@@ -283,9 +283,9 @@ export function TripsTable({
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-hidden">
         <Table>
-          <TableHeader className="bg-gray-50/80">
-            <TableRow className="border-b border-gray-200/50">
-              <TableHead className="w-[60px] font-semibold text-gray-700">Sr No.</TableHead>
+          <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100/80 sticky top-0">
+            <TableRow className="border-b-2 border-gray-200/60">
+              <TableHead className="w-[60px] font-bold text-gray-800 text-center">Sr No.</TableHead>
               <SortableTableHeader sortKey="date" currentSort={sortConfig} onSort={handleSort}>
                 Date
               </SortableTableHeader>
@@ -306,13 +306,13 @@ export function TripsTable({
                 Weight
               </SortableTableHeader>
               <SortableTableHeader sortKey="total" currentSort={sortConfig} onSort={handleSort}>
-                Total
+                Bill Amount
               </SortableTableHeader>
               <SortableTableHeader sortKey="received" currentSort={sortConfig} onSort={handleSort}>
                 Received
               </SortableTableHeader>
               <SortableTableHeader sortKey="balance" currentSort={sortConfig} onSort={handleSort}>
-                Balance
+                Balance Due
               </SortableTableHeader>
               <SortableTableHeader sortKey="payment" currentSort={sortConfig} onSort={handleSort}>
                 Payment
@@ -334,44 +334,57 @@ export function TripsTable({
               </TableRow>
             ) : (
               paginatedTrips.map((trip, index) => (
-                <TableRow key={trip.id} className="hover:bg-blue-50/50 transition-colors duration-150 border-b border-gray-100/50">
+                <TableRow key={trip.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50/30 transition-all duration-200 border-b border-gray-100/50 group">
                   <TableCell className="text-center text-sm font-medium text-gray-700">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-700 shadow-sm group-hover:shadow-md transition-shadow duration-200">
                       {startIndex + index + 1}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">
-                    {formatDate(trip.trip_date)}
+                  <TableCell className="font-semibold text-gray-900">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      {formatDate(trip.trip_date)}
+                    </div>
                   </TableCell>
-                  <TableCell>{trip.truck?.truck_no || '-'}</TableCell>
-                  <TableCell className="max-w-[150px] truncate">
+                  <TableCell className="font-mono font-medium text-gray-800">
+                    <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">
+                      {trip.truck?.truck_no || '-'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="max-w-[150px] truncate font-medium text-gray-700">
                     {trip.center_city || '-'}
                   </TableCell>
-                  <TableCell>
-                    {trip.lr_no || '-'}
+                  <TableCell className="font-mono text-sm">
+                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md">
+                      {trip.lr_no || '-'}
+                    </span>
                   </TableCell>
-                  <TableCell className="max-w-[150px] truncate">
+                  <TableCell className="max-w-[150px] truncate font-medium text-gray-700">
                     {trip.consignee1?.name || '-'}
                   </TableCell>
-                  <TableCell>
-                    {trip.payment_weight ? `${trip.payment_weight} MT` : '-'}
+                  <TableCell className="font-semibold text-gray-800">
+                    {trip.payment_weight ? (
+                      <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded-md text-sm">
+                        {trip.payment_weight} MT
+                      </span>
+                    ) : '-'}
                   </TableCell>
-                  <TableCell>{formatCurrency(trip.total_amount)}</TableCell>
-                  <TableCell>{formatCurrency(trip.amount_received)}</TableCell>
-                  <TableCell>{formatCurrency(trip.balance_due)}</TableCell>
+                  <TableCell className="font-bold text-gray-900">{formatCurrency(trip.total_amount)}</TableCell>
+                  <TableCell className="font-bold text-green-600">{formatCurrency(trip.amount_received)}</TableCell>
+                  <TableCell className="font-bold text-red-600">{formatCurrency(trip.balance_due)}</TableCell>
                   <TableCell>
-                    <Badge className={`${getPaymentStatusColor(trip.payment_status)} px-3 py-1 text-xs font-semibold rounded-full`}>
+                    <Badge className={`${getPaymentStatusColor(trip.payment_status)} px-3 py-1 text-xs font-bold rounded-full shadow-sm border-0`}>
                       {trip.payment_status}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-1">
-                      <Button variant="ghost" size="sm" asChild className="hover:bg-blue-50 hover:text-blue-600 transition-colors duration-150">
+                      <Button variant="ghost" size="sm" asChild className="hover:bg-blue-50 hover:text-blue-600 hover:shadow-md transition-all duration-200 rounded-lg">
                         <Link href={`/trips/${trip.id}`}>
                           <Eye className="w-4 h-4" />
                         </Link>
                       </Button>
-                      <Button variant="ghost" size="sm" asChild className="hover:bg-green-50 hover:text-green-600 transition-colors duration-150">
+                      <Button variant="ghost" size="sm" asChild className="hover:bg-green-50 hover:text-green-600 hover:shadow-md transition-all duration-200 rounded-lg">
                         <Link href={`/trips/${trip.id}/edit`}>
                           <Edit className="w-4 h-4" />
                         </Link>
@@ -379,7 +392,7 @@ export function TripsTable({
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        className="hover:bg-purple-50 hover:text-purple-600 transition-colors duration-150"
+                        className="hover:bg-purple-50 hover:text-purple-600 hover:shadow-md transition-all duration-200 rounded-lg"
                         onClick={() => {
                           setSelectedTrip(trip)
                           setIsPaymentPopupOpen(true)

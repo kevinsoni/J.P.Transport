@@ -77,7 +77,7 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] m-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]" style={{ margin: 'auto' }}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[100vh] overflow-hidden m-4">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">

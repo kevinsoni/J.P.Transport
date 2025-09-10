@@ -20,9 +20,7 @@ export default async function DashboardLayout({
       <Navigation />
       <div className="lg:pl-64">
         <main className="p-4 lg:p-8">
-          <div className="max-w-7xl mx-auto">
             {children}
-          </div>
         </main>
       </div>
     </div>

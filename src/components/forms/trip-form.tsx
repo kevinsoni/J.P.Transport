@@ -235,18 +235,18 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="center_city">Center</Label>
-              <Input name="center_city" placeholder="Center city" />
+              <Input name="center_city" placeholder="Center city" defaultValue={editData?.center_city || ''} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="cargo_details">Cargo</Label>
-              <Input name="cargo_details" placeholder="Cargo details" />
+              <Input name="cargo_details" placeholder="Cargo details" defaultValue={editData?.cargo_details || ''} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="loading_weight">Loading Weight</Label>
-              <Input name="loading_weight" type="number" step="0.01" placeholder="0.00" />
+              <Input name="loading_weight" type="number" step="0.01" placeholder="0.00" defaultValue={editData?.loading_weight || ''} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="payment_weight">Payment Weight</Label>
@@ -255,16 +255,17 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 type="number" 
                 step="0.01" 
                 placeholder="0.00"
+                defaultValue={editData?.payment_weight || ''}
                 onChange={(e) => handleAmountChange('payment_weight', e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="lr_no">L/R No.</Label>
-              <Input name="lr_no" placeholder="LR number" />
+              <Input name="lr_no" placeholder="LR number" defaultValue={editData?.lr_no || ''} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="lr_name">L/R Name</Label>
-              <Input name="lr_name" placeholder="LR name" />
+              <Input name="lr_name" placeholder="LR name" defaultValue={editData?.lr_name || ''} />
             </div>
           </div>
         </CardContent>
@@ -344,7 +345,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label htmlFor="party_payment_name">Party Payment Name</Label>
-              <Input name="party_payment_name" placeholder="Party payment name" />
+              <Input name="party_payment_name" placeholder="Party payment name" defaultValue={editData?.party_payment_name || ''} />
             </div>
           </div>
 
