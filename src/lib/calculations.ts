@@ -1,6 +1,38 @@
 import type { PaymentStatus, Trip, Payment } from '@/types/db'
 
 export interface TripCalculationInput {
+  rate: number
+  tp_charge_consignor1: number
+  tp_charge_consignor2: number
+  rto_charge_gujarat: number
+  rto_charge_maharashtra: number
+  lr_amount: number
+  driver_cash_received: number
+}
+
+export interface TripCalculationResult {
+  total_charges: number
+  bill_amount: number
+}
+
+export function computeTripTotals(input: TripCalculationInput): TripCalculationResult {
+  const total_charges = 
+    input.rate + 
+    input.tp_charge_consignor1 + 
+    input.tp_charge_consignor2 + 
+    input.rto_charge_gujarat + 
+    input.rto_charge_maharashtra
+
+  const bill_amount = total_charges - input.lr_amount - input.driver_cash_received
+
+  return {
+    total_charges,
+    bill_amount,
+  }
+}
+
+// Legacy function for backward compatibility
+export interface LegacyTripCalculationInput {
   freight_amount: number
   rto_charges: number
   toll_charges: number
@@ -10,13 +42,13 @@ export interface TripCalculationInput {
   tax_percent: number
 }
 
-export interface TripCalculationResult {
+export interface LegacyTripCalculationResult {
   subtotal: number
   tax_amount: number
   total_amount: number
 }
 
-export function computeTripTotals(input: TripCalculationInput): TripCalculationResult {
+export function computeLegacyTripTotals(input: LegacyTripCalculationInput): LegacyTripCalculationResult {
   const subtotal = 
     input.freight_amount + 
     input.rto_charges + 
@@ -48,6 +80,31 @@ export function derivePaymentStatus(total_amount: number, amount_received: numbe
 }
 
 export function calculateTripAmounts(
+  trip: Pick<Trip, 'rate' | 'tp_charge_consignor1' | 'tp_charge_consignor2' | 'rto_charge_gujarat' | 'rto_charge_maharashtra' | 'lr_amount' | 'driver_cash_received'>,
+  payments: Payment[] = []
+): {
+  total_charges: number
+  bill_amount: number
+  amount_received: number
+  balance_due: number
+  payment_status: PaymentStatus
+} {
+  const { total_charges, bill_amount } = computeTripTotals(trip)
+  const amount_received = payments.reduce((sum, payment) => sum + payment.amount, 0)
+  const balance_due = bill_amount - amount_received
+  const payment_status = derivePaymentStatus(bill_amount, amount_received)
+
+  return {
+    total_charges,
+    bill_amount,
+    amount_received,
+    balance_due,
+    payment_status,
+  }
+}
+
+// Legacy function for backward compatibility
+export function calculateLegacyTripAmounts(
   trip: Pick<Trip, 'freight_amount' | 'rto_charges' | 'toll_charges' | 'loading_unloading' | 'diesel_advance' | 'other_charges' | 'tax_percent'>,
   payments: Payment[] = []
 ): {
@@ -58,7 +115,7 @@ export function calculateTripAmounts(
   balance_due: number
   payment_status: PaymentStatus
 } {
-  const { subtotal, tax_amount, total_amount } = computeTripTotals(trip)
+  const { subtotal, tax_amount, total_amount } = computeLegacyTripTotals(trip)
   const amount_received = payments.reduce((sum, payment) => sum + payment.amount, 0)
   const balance_due = total_amount - amount_received
   const payment_status = derivePaymentStatus(total_amount, amount_received)

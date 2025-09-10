@@ -21,9 +21,11 @@ export async function createParty(formData: FormData) {
   // Validate the data
   const validatedData = PartySchema.parse(rawData)
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('parties')
     .insert([validatedData])
+    .select()
+    .single()
 
   if (error) {
     console.error('Error creating party:', error)
@@ -31,6 +33,11 @@ export async function createParty(formData: FormData) {
   }
 
   revalidatePath('/parties')
+  return data
+}
+
+export async function createPartyAndRedirect(formData: FormData) {
+  await createParty(formData)
   redirect('/parties')
 }
 

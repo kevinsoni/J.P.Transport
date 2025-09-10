@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createTruck } from '@/app/(dashboard)/trucks/actions'
+import { createTruckAndRedirect } from '@/app/(dashboard)/trucks/actions'
 import { Party } from '@/types/db'
 
 interface TruckFormProps {
@@ -41,7 +41,7 @@ export function TruckForm({ owners }: TruckFormProps) {
     })
     
     try {
-      await createTruck(formData)
+      await createTruckAndRedirect(formData)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create truck'
       setError(errorMessage)

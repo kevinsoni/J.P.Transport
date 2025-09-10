@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createParty } from '@/app/(dashboard)/parties/actions'
+import { createPartyAndRedirect } from '@/app/(dashboard)/parties/actions'
 
 export function PartyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -14,7 +14,7 @@ export function PartyForm() {
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
     try {
-      await createParty(formData)
+      await createPartyAndRedirect(formData)
     } catch (error) {
       console.error('Party creation failed:', error)
     } finally {

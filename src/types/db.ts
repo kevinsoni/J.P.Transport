@@ -87,13 +87,17 @@ export interface Database {
           cargo_details: string | null
           transport_details: string | null
           consignor_id: string
+          consignor2_id: string | null
           consignee1_id: string
           consignee2_id: string | null
           lr_no: string | null
+          lr_name: string | null
           invoice_no: string | null
           driver_name: string | null
           driver_phone: string | null
           weight_mt: number | null
+          loading_weight: number | null
+          payment_weight: number | null
           no_of_packages: number | null
           route_notes: string | null
           remarks: string | null
@@ -104,6 +108,15 @@ export interface Database {
           diesel_advance: number
           other_charges: number
           tax_percent: number
+          advance_amount: number
+          rate: number
+          tp_charge_consignor1: number
+          tp_charge_consignor2: number
+          rto_charge_gujarat: number
+          rto_charge_maharashtra: number
+          lr_amount: number
+          driver_cash_received: number
+          party_payment_name: string | null
           total_amount: number
           amount_received: number
           balance_due: number
@@ -129,13 +142,17 @@ export interface Database {
           cargo_details?: string | null
           transport_details?: string | null
           consignor_id: string
+          consignor2_id?: string | null
           consignee1_id: string
           consignee2_id?: string | null
           lr_no?: string | null
+          lr_name?: string | null
           invoice_no?: string | null
           driver_name?: string | null
           driver_phone?: string | null
           weight_mt?: number | null
+          loading_weight?: number | null
+          payment_weight?: number | null
           no_of_packages?: number | null
           route_notes?: string | null
           remarks?: string | null
@@ -146,6 +163,15 @@ export interface Database {
           diesel_advance?: number
           other_charges?: number
           tax_percent?: number
+          advance_amount?: number
+          rate?: number
+          tp_charge_consignor1?: number
+          tp_charge_consignor2?: number
+          rto_charge_gujarat?: number
+          rto_charge_maharashtra?: number
+          lr_amount?: number
+          driver_cash_received?: number
+          party_payment_name?: string | null
           total_amount?: number
           amount_received?: number
           balance_due?: number
@@ -286,6 +312,7 @@ export type Attachment = Database['public']['Tables']['attachments']['Row']
 export type TripWithRelations = Trip & {
   truck: Truck
   consignor: Party
+  consignor2?: Party
   consignee1: Party
   consignee2?: Party
   settlement_party?: Party

@@ -19,9 +19,11 @@ export async function createTruck(formData: FormData) {
     
     const validatedData = TruckSchema.parse(rawData)
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('trucks')
       .insert([validatedData])
+      .select()
+      .single()
 
     if (error) {
       console.error('Supabase error creating truck:', error)
@@ -34,7 +36,7 @@ export async function createTruck(formData: FormData) {
     }
 
     revalidatePath('/trucks')
-    redirect('/trucks')
+    return data
   } catch (error) {
     console.error('Error in createTruck:', error)
     if (error instanceof Error) {
@@ -42,6 +44,11 @@ export async function createTruck(formData: FormData) {
     }
     throw new Error('Failed to create truck: Unknown error')
   }
+}
+
+export async function createTruckAndRedirect(formData: FormData) {
+  await createTruck(formData)
+  redirect('/trucks')
 }
 
 export async function getTrucks() {

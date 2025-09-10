@@ -1,15 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { SearchableSelect } from '@/components/ui/searchable-select'
 import { createTrip, updateTrip } from '@/app/(dashboard)/trips/actions'
-import { createParty } from '@/app/(dashboard)/parties/actions'
-import { createTruck } from '@/app/(dashboard)/trucks/actions'
 import { Truck, Party, Trip } from '@/types/db'
 
 type TruckWithOwner = Truck & {
@@ -23,21 +20,11 @@ interface TripFormProps {
   tripId?: string
 }
 
-export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
+export function UpdatedTripForm({ trucks, parties, editData, tripId }: TripFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const formRef = useRef<HTMLFormElement>(null)
-  const [partiesList, setPartiesList] = useState(parties)
-  const [trucksList, setTrucksList] = useState(trucks)
-  const [selectedParties, setSelectedParties] = useState({
-    consignor_id: editData?.consignor_id || '',
-    consignor2_id: editData?.consignor2_id || '',
-    consignee1_id: editData?.consignee1_id || '',
-    settlement_party_id: editData?.settlement_party_id || ''
-  })
-  const [selectedTruck, setSelectedTruck] = useState(editData?.truck_id || '')
   const [amounts, setAmounts] = useState({
+    advance_amount: editData?.advance_amount || 0,
     rate: editData?.rate || 0,
-    payment_weight: editData?.payment_weight || 0,
     tp_charge_consignor1: editData?.tp_charge_consignor1 || 0,
     tp_charge_consignor2: editData?.tp_charge_consignor2 || 0,
     rto_charge_gujarat: editData?.rto_charge_gujarat || 0,
@@ -47,8 +34,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
   })
 
   // Calculate totals
-  const rateAmount = amounts.rate * (amounts.payment_weight || 1)
-  const totalAmount = rateAmount + amounts.tp_charge_consignor1 + amounts.tp_charge_consignor2 + 
+  const totalAmount = amounts.rate + amounts.tp_charge_consignor1 + amounts.tp_charge_consignor2 + 
                      amounts.rto_charge_gujarat + amounts.rto_charge_maharashtra
   const billAmount = totalAmount - amounts.lr_amount - amounts.driver_cash_received
 
@@ -58,25 +44,6 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
       ...prev,
       [field]: numValue
     }))
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      const form = formRef.current
-      if (!form) return
-      
-      const inputs = Array.from(form.querySelectorAll('input, select, textarea')).filter(
-        (el) => !el.hasAttribute('disabled') && el.getAttribute('type') !== 'submit'
-      ) as HTMLElement[]
-      
-      const currentIndex = inputs.indexOf(e.target as HTMLElement)
-      const nextIndex = currentIndex + 1
-      
-      if (nextIndex < inputs.length) {
-        inputs[nextIndex].focus()
-      }
-    }
   }
 
   const handleSubmit = async (formData: FormData) => {
@@ -102,36 +69,12 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
     }).format(amount)
   }
 
-  const handleAddParty = async (name: string, type: string): Promise<string> => {
-    const formData = new FormData()
-    formData.append('name', name)
-    formData.append('type', type)
-    
-    const newParty = await createParty(formData)
-    setPartiesList(prev => [...prev, newParty])
-    return newParty.id
-  }
-
-  const handleAddTruck = async (truckNo: string): Promise<string> => {
-    const formData = new FormData()
-    formData.append('truck_no', truckNo)
-    formData.append('active', 'true')
-    
-    const newTruck = await createTruck(formData)
-    setTrucksList(prev => [...prev, newTruck])
-    return newTruck.id
-  }
-
-  const handlePartySelect = (field: string, value: string) => {
-    setSelectedParties(prev => ({ ...prev, [field]: value }))
-  }
-
-  const consignors = partiesList.filter(p => p.type === 'consignor' || p.type === 'transport')
-  const consignees = partiesList.filter(p => p.type === 'consignee' || p.type === 'transport')
-  const owners = partiesList.filter(p => p.type === 'owner')
+  const consignors = parties.filter(p => p.type === 'consignor' || p.type === 'transport')
+  const consignees = parties.filter(p => p.type === 'consignee' || p.type === 'transport')
+  const owners = parties.filter(p => p.type === 'owner')
 
   return (
-    <form ref={formRef} action={handleSubmit} className="space-y-6" onKeyDown={handleKeyDown}>
+    <form action={handleSubmit} className="space-y-6">
       {/* Basic Trip Information */}
       <Card>
         <CardHeader>
@@ -150,15 +93,18 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="truck_id">Truck Number *</Label>
-              <SearchableSelect
-                options={trucksList.map(truck => ({ id: truck.id, name: truck.truck_no }))}
-                value={selectedTruck}
-                placeholder="Select or add truck number"
-                onSelect={(value) => setSelectedTruck(value)}
-                onAddNew={(truckNo) => handleAddTruck(truckNo)}
-                partyType="truck"
-                name="truck_id"
-              />
+              <Select name="truck_id" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select truck" />
+                </SelectTrigger>
+                <SelectContent>
+                  {trucks.map((truck) => (
+                    <SelectItem key={truck.id} value={truck.id}>
+                      {truck.truck_no}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="center_city">Center</Label>
@@ -177,13 +123,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="payment_weight">Payment Weight</Label>
-              <Input 
-                name="payment_weight" 
-                type="number" 
-                step="0.01" 
-                placeholder="0.00"
-                onChange={(e) => handleAmountChange('payment_weight', e.target.value)}
-              />
+              <Input name="payment_weight" type="number" step="0.01" placeholder="0.00" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="lr_no">L/R No.</Label>
@@ -206,57 +146,67 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="consignor_id">Consignor (1) *</Label>
-              <SearchableSelect
-                options={consignors}
-                value={selectedParties.consignor_id}
-                placeholder="Select or add consignor 1"
-                onSelect={(value) => handlePartySelect('consignor_id', value)}
-                onAddNew={(name) => handleAddParty(name, 'consignor')}
-                partyType="consignor"
-                name="consignor_id"
-              />
+              <Select name="consignor_id" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select consignor 1" />
+                </SelectTrigger>
+                <SelectContent>
+                  {consignors.map((party) => (
+                    <SelectItem key={party.id} value={party.id}>
+                      {party.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="consignor2_id">Consignor (2)</Label>
-              <SearchableSelect
-                options={consignors}
-                value={selectedParties.consignor2_id}
-                placeholder="Select or add consignor 2"
-                onSelect={(value) => handlePartySelect('consignor2_id', value)}
-                onAddNew={(name) => handleAddParty(name, 'consignor')}
-                partyType="consignor"
-                name="consignor2_id"
-              />
+              <Select name="consignor2_id">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select consignor 2" />
+                </SelectTrigger>
+                <SelectContent>
+                  {consignors.map((party) => (
+                    <SelectItem key={party.id} value={party.id}>
+                      {party.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="consignee1_id">Consignee *</Label>
-              <SearchableSelect
-                options={consignees}
-                value={selectedParties.consignee1_id}
-                placeholder="Select or add consignee"
-                onSelect={(value) => handlePartySelect('consignee1_id', value)}
-                onAddNew={(name) => handleAddParty(name, 'consignee')}
-                partyType="consignee"
-                name="consignee1_id"
-              />
+              <Select name="consignee1_id" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select consignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {consignees.map((party) => (
+                    <SelectItem key={party.id} value={party.id}>
+                      {party.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="settlement_party_id">Truck Owner</Label>
-              <SearchableSelect
-                options={owners}
-                value={selectedParties.settlement_party_id}
-                placeholder="Select or add truck owner"
-                onSelect={(value) => handlePartySelect('settlement_party_id', value)}
-                onAddNew={(name) => handleAddParty(name, 'owner')}
-                partyType="owner"
-                name="settlement_party_id"
-              />
+              <Select name="settlement_party_id">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select truck owner" />
+                </SelectTrigger>
+                <SelectContent>
+                  {owners.map((party) => (
+                    <SelectItem key={party.id} value={party.id}>
+                      {party.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
-
-
 
       {/* Financial Details */}
       <Card>
@@ -264,7 +214,17 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
           <CardTitle>Financial Details</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="advance_amount">Advance</Label>
+              <Input
+                name="advance_amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                onChange={(e) => handleAmountChange('advance_amount', e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="party_payment_name">Party Payment Name</Label>
               <Input name="party_payment_name" placeholder="Party payment name" />
@@ -329,7 +289,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
           {/* Total Row */}
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-center font-semibold">
-              <div className="text-blue-600">{formatCurrency(rateAmount)}</div>
+              <div className="text-blue-600">{formatCurrency(amounts.rate)}</div>
               <div className="text-blue-600">{formatCurrency(amounts.tp_charge_consignor1)}</div>
               <div className="text-blue-600">{formatCurrency(amounts.tp_charge_consignor2)}</div>
               <div className="text-blue-600">{formatCurrency(amounts.rto_charge_gujarat)}</div>
@@ -385,8 +345,6 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
           </div>
         </CardContent>
       </Card>
-
-
 
       <div className="flex gap-4">
         <Button 
