@@ -19,6 +19,11 @@
 .DS_Store
 *.pem
 
+# database backups / dumps (may contain sensitive data)
+/db/
+*.backup
+*.dump
+
 # debug
 npm-debug.log*
 yarn-debug.log*

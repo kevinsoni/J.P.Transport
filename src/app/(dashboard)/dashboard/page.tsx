@@ -64,8 +64,8 @@ function DashboardHeader({ trips, setIsTripSelectionOpen }: { trips: any[], setI
         </h1>
         <p className="text-gray-600 text-lg">Overview of your transport operations</p>
       </div>
-      <div className="flex gap-3">
-        <Button 
+      <div className="flex flex-wrap gap-3">
+        <Button
           onClick={() => setIsTripSelectionOpen(true)}
           disabled={trips.length === 0}
           className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg hover:shadow-xl transition-all duration-200"

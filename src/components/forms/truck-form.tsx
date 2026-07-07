@@ -157,7 +157,7 @@ export function TruckForm({ owners }: TruckFormProps) {
             </div>
 
             <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" loading={isSubmitting}>
                 {isSubmitting ? 'Creating Truck...' : 'Create Truck'}
               </Button>
               <Button type="button" variant="outline" asChild>

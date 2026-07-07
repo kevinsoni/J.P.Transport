@@ -28,6 +28,7 @@ export const TripSchema = z.object({
   cargo_details: z.string().optional().nullable(),
   consignor_id: z.string().min(1, 'Consignor is required'),
 
+  consignor2_id: z.string().optional().nullable(),
   consignee1_id: z.string().min(1, 'Consignee is required'),
   lr_no: z.string().optional().nullable(),
   lr_name: z.string().optional().nullable(),

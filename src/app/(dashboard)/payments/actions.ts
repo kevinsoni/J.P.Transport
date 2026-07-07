@@ -5,32 +5,41 @@ import { PaymentSchema } from '@/lib/validators'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-export async function createPayment(formData: FormData) {
-  const supabase = createClient()
-
-  const rawData = {
+function parsePaymentFormData(formData: FormData) {
+  const amountRaw = formData.get('amount') as string
+  const amountNum = amountRaw ? parseFloat(amountRaw) : NaN
+  return {
     trip_id: formData.get('trip_id') as string,
     payment_date: formData.get('payment_date') as string,
-    amount: parseFloat(formData.get('amount') as string),
+    // Payments are recorded as whole rupees.
+    amount: Number.isFinite(amountNum) ? Math.round(amountNum) : NaN,
     method: formData.get('method') as 'CASH' | 'UPI' | 'BANK' | 'OTHER',
     reference_no: formData.get('reference_no') as string || null,
     notes: formData.get('notes') as string || null,
   }
+}
 
-  // Validate the data
-  const validatedData = PaymentSchema.parse(rawData)
+// Does not redirect: callers (new-payment page, in-trip popup) decide what to do next.
+export async function createPayment(formData: FormData): Promise<{ error?: string }> {
+  const supabase = createClient()
+
+  const parsed = PaymentSchema.safeParse(parsePaymentFormData(formData))
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message || 'Please check the payment details.' }
+  }
 
   const { error } = await supabase
     .from('payments')
-    .insert([validatedData])
+    .insert([parsed.data])
 
   if (error) {
     console.error('Error creating payment:', error)
-    throw new Error('Failed to create payment')
+    return { error: 'Failed to record payment. Please try again.' }
   }
 
   revalidatePath('/payments')
-  redirect('/payments')
+  revalidatePath('/trips')
+  return {}
 }
 
 export async function getPayments() {
@@ -131,31 +140,26 @@ export async function deletePayment(id: string) {
   revalidatePath('/payments')
 }
 
-export async function updatePayment(id: string, formData: FormData) {
+export async function updatePayment(id: string, formData: FormData): Promise<{ error: string } | void> {
   const supabase = createClient()
 
-  const rawData = {
-    trip_id: formData.get('trip_id') as string,
-    payment_date: formData.get('payment_date') as string,
-    amount: parseFloat(formData.get('amount') as string),
-    method: formData.get('method') as 'CASH' | 'UPI' | 'BANK' | 'OTHER',
-    reference_no: formData.get('reference_no') as string || null,
-    notes: formData.get('notes') as string || null,
+  const parsed = PaymentSchema.safeParse(parsePaymentFormData(formData))
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message || 'Please check the payment details.' }
   }
-
-  const validatedData = PaymentSchema.parse(rawData)
 
   const { error } = await supabase
     .from('payments')
-    .update(validatedData)
+    .update(parsed.data)
     .eq('id', id)
 
   if (error) {
     console.error('Error updating payment:', error)
-    throw new Error('Failed to update payment')
+    return { error: 'Failed to update payment. Please try again.' }
   }
 
   revalidatePath('/payments')
+  revalidatePath('/trips')
   revalidatePath(`/payments/${id}`)
   redirect(`/payments/${id}`)
 }

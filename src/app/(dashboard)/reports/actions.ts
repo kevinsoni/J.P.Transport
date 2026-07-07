@@ -57,20 +57,20 @@ export async function getRTOSummary() {
 
     const { data: trips, error } = await supabase
       .from('trips')
-      .select('trip_date, rto_charges')
+      .select('trip_date, rto_charge_gujarat, rto_charge_maharashtra')
       .gte('trip_date', sixMonthsAgo.toISOString().split('T')[0])
       .order('trip_date')
 
     if (error) throw error
 
-    // Group RTO charges by month
+    // Group RTO charges by month (Gujarat + Maharashtra)
     const monthlyData: { [key: string]: number } = {}
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     trips?.forEach(trip => {
       const date = new Date(trip.trip_date)
       const monthKey = `${months[date.getMonth()]} ${date.getFullYear().toString().slice(-2)}`
-      monthlyData[monthKey] = (monthlyData[monthKey] || 0) + (trip.rto_charges || 0)
+      monthlyData[monthKey] = (monthlyData[monthKey] || 0) + (trip.rto_charge_gujarat || 0) + (trip.rto_charge_maharashtra || 0)
     })
 
     return Object.entries(monthlyData).map(([name, value]) => ({ name, value })).slice(-6)
@@ -121,13 +121,13 @@ export async function getCurrentMonthRTO() {
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
     const { data: trips, error } = await supabase
       .from('trips')
-      .select('rto_charges')
+      .select('rto_charge_gujarat, rto_charge_maharashtra')
       .gte('trip_date', `${currentMonth}-01`)
       .lt('trip_date', `${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 10)}`)
 
     if (error) throw error
 
-    const totalRTO = trips?.reduce((sum, trip) => sum + (trip.rto_charges || 0), 0) || 0
+    const totalRTO = trips?.reduce((sum, trip) => sum + (trip.rto_charge_gujarat || 0) + (trip.rto_charge_maharashtra || 0), 0) || 0
     return totalRTO
   } catch (error) {
     console.error('Error fetching current month RTO:', error)

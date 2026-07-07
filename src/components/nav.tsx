@@ -30,13 +30,20 @@ const navigation = [
 
 export function Navigation() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    setIsSigningOut(true)
+    try {
+      await supabase.auth.signOut()
+      router.push('/login')
+      router.refresh()
+    } catch {
+      setIsSigningOut(false)
+    }
   }
 
   return (
@@ -106,10 +113,11 @@ export function Navigation() {
               <Button
                 onClick={handleSignOut}
                 variant="ghost"
+                loading={isSigningOut}
                 className="w-full justify-start text-gray-600 hover:bg-gray-50"
               >
-                <LogOut className="w-5 h-5 mr-3" />
-                Sign Out
+                {!isSigningOut && <LogOut className="w-5 h-5 mr-3" />}
+                {isSigningOut ? 'Signing out...' : 'Sign Out'}
               </Button>
             </div>
           </div>

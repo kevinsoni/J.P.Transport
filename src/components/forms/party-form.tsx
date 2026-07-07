@@ -10,13 +10,19 @@ import { createPartyAndRedirect } from '@/app/(dashboard)/parties/actions'
 
 export function PartyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
+    setError(null)
     try {
-      await createPartyAndRedirect(formData)
-    } catch (error) {
-      console.error('Party creation failed:', error)
+      const result = await createPartyAndRedirect(formData)
+      if (result?.error) {
+        setError(result.error)
+      }
+    } catch (err) {
+      console.error('Party creation failed:', err)
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -103,10 +109,16 @@ export function PartyForm() {
             />
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isSubmitting}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm text-red-600 font-medium">{error}</p>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            loading={isSubmitting}
           >
             {isSubmitting ? 'Creating Party...' : 'Create Party'}
           </Button>

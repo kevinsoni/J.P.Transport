@@ -23,12 +23,14 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('')
   const [amount, setAmount] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   // Reset form when popup opens
   useEffect(() => {
     if (isOpen) {
       setPaymentMethod('')
       setAmount('')
+      setError(null)
     }
   }, [isOpen])
 
@@ -54,13 +56,19 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
 
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
+    setError(null)
     try {
       formData.append('trip_id', trip.id)
-      await createPayment(formData)
+      const result = await createPayment(formData)
+      if (result?.error) {
+        setError(result.error)
+        return
+      }
       onSuccess()
       onClose()
-    } catch (error) {
-      console.error('Payment creation failed:', error)
+    } catch (err) {
+      console.error('Payment creation failed:', err)
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -77,8 +85,8 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]" style={{ margin: 'auto' }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[100vh] overflow-hidden m-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
           <div className="flex items-center justify-between">
@@ -97,7 +105,7 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(95vh-80px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-84px)]">
           {/* Trip Summary Card */}
           <Card className="mb-6 border-2 border-blue-100">
             <CardHeader className="pb-3">
@@ -177,10 +185,19 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
                   <Input
                     type="number"
                     name="amount"
-                    step="0.01"
-                    placeholder="0.00"
+                    step="1"
+                    inputMode="numeric"
+                    placeholder="0"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (['.', ',', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault()
+                    }}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      if (v === '') { setAmount(''); return }
+                      const n = Number(v)
+                      if (Number.isFinite(n)) setAmount(String(Math.round(n)))
+                    }}
                     max={trip.balance_due}
                     className="pl-10 h-11 text-lg font-semibold"
                     required
@@ -248,6 +265,12 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
               />
             </div>
 
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600 font-medium">{error}</p>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
               <Button 
@@ -259,14 +282,12 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || !amount || parseFloat(amount) > trip.balance_due} 
+              <Button
+                type="submit"
+                loading={isSubmitting}
+                disabled={isSubmitting || !amount || parseFloat(amount) > trip.balance_due}
                 className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
               >
-                {isSubmitting && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                )}
                 {isSubmitting ? 'Processing...' : `Record Payment ${amount ? formatCurrency(parseFloat(amount)) : ''}`}
               </Button>
             </div>

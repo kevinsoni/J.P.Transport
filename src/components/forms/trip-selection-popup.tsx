@@ -98,34 +98,34 @@ export function TripSelectionPopup({ trips, isOpen, onClose, onSelectTrip }: Tri
                   onClick={() => onSelectTrip(trip)}
                   className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-500" />
+                          <Calendar className="w-4 h-4 text-gray-500 shrink-0" />
                           <span className="font-medium">{formatDate(trip.trip_date)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-gray-500" />
-                          <span className="font-medium">{trip.truck?.truck_no}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Truck className="w-4 h-4 text-gray-500 shrink-0" />
+                          <span className="font-medium truncate">{trip.truck?.truck_no}</span>
                         </div>
                         {trip.lr_no && (
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-gray-600 truncate">
                             L/R: {trip.lr_no}
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          <span>{trip.consignee1?.name}</span>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <User className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{trip.consignee1?.name}</span>
                         </div>
                         {trip.center_city && (
-                          <div>{trip.center_city}</div>
+                          <div className="truncate">{trip.center_city}</div>
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
                       <div className="text-lg font-bold text-gray-900">
                         {formatCurrency(trip.total_amount)}
                       </div>

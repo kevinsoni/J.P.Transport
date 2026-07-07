@@ -155,7 +155,8 @@ export function TripsTable({
   const paginatedTrips = sortedTrips.slice(startIndex, startIndex + itemsPerPage)
 
   const handleExport = () => {
-    exportTripsToCSV(trips)
+    // Export what the user is actually looking at (filtered + sorted), not the raw list.
+    exportTripsToCSV(sortedTrips)
   }
 
   if (loading) {
@@ -439,7 +440,10 @@ export function TripsTable({
             </span>
             <div className="flex items-center gap-1 ml-4">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const page = i + 1
+                // Window the 5 page buttons around the current page so pages 6+ are reachable.
+                const windowStart = Math.max(1, Math.min(currentPage - 2, totalPages - 4))
+                const page = windowStart + i
+                if (page > totalPages) return null
                 return (
                   <button
                     key={page}

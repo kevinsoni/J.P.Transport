@@ -2,6 +2,7 @@ import type { PaymentStatus, Trip, Payment } from '@/types/db'
 
 export interface TripCalculationInput {
   rate: number
+  payment_weight?: number | null
   tp_charge_consignor1: number
   tp_charge_consignor2: number
   rto_charge_gujarat: number
@@ -11,21 +12,28 @@ export interface TripCalculationInput {
 }
 
 export interface TripCalculationResult {
+  rate_amount: number
   total_charges: number
   bill_amount: number
 }
 
 export function computeTripTotals(input: TripCalculationInput): TripCalculationResult {
-  const total_charges = 
-    input.rate + 
-    input.tp_charge_consignor1 + 
-    input.tp_charge_consignor2 + 
-    input.rto_charge_gujarat + 
+  // Rate is a per-MT rate; multiply by payment weight (fallback to 1 when weight is 0/absent).
+  const weightMultiplier = input.payment_weight && input.payment_weight > 0 ? input.payment_weight : 1
+  const rate_amount = input.rate * weightMultiplier
+
+  const total_charges =
+    rate_amount +
+    input.tp_charge_consignor1 +
+    input.tp_charge_consignor2 +
+    input.rto_charge_gujarat +
     input.rto_charge_maharashtra
 
+  // Net bill owed by the customer.
   const bill_amount = total_charges - input.lr_amount - input.driver_cash_received
 
   return {
+    rate_amount,
     total_charges,
     bill_amount,
   }
@@ -80,21 +88,23 @@ export function derivePaymentStatus(total_amount: number, amount_received: numbe
 }
 
 export function calculateTripAmounts(
-  trip: Pick<Trip, 'rate' | 'tp_charge_consignor1' | 'tp_charge_consignor2' | 'rto_charge_gujarat' | 'rto_charge_maharashtra' | 'lr_amount' | 'driver_cash_received'>,
+  trip: Pick<Trip, 'rate' | 'payment_weight' | 'tp_charge_consignor1' | 'tp_charge_consignor2' | 'rto_charge_gujarat' | 'rto_charge_maharashtra' | 'lr_amount' | 'driver_cash_received'>,
   payments: Payment[] = []
 ): {
+  rate_amount: number
   total_charges: number
   bill_amount: number
   amount_received: number
   balance_due: number
   payment_status: PaymentStatus
 } {
-  const { total_charges, bill_amount } = computeTripTotals(trip)
+  const { rate_amount, total_charges, bill_amount } = computeTripTotals(trip)
   const amount_received = payments.reduce((sum, payment) => sum + payment.amount, 0)
   const balance_due = bill_amount - amount_received
   const payment_status = derivePaymentStatus(bill_amount, amount_received)
 
   return {
+    rate_amount,
     total_charges,
     bill_amount,
     amount_received,

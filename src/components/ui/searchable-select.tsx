@@ -35,6 +35,7 @@ export function SearchableSelect({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [isAdding, setIsAdding] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -85,6 +86,24 @@ export function SearchableSelect({
       console.error('Failed to add new party:', error)
     } finally {
       setIsAdding(false)
+    }
+  }
+
+  const handleDelete = async (id: string, displayName: string) => {
+    if (!onDelete) return
+    if (!window.confirm(`Delete "${displayName}"? This cannot be undone.`)) return
+
+    setDeletingId(id)
+    try {
+      await onDelete(id)
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : 'Could not delete this item. It may still be used by a trip.'
+      )
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -219,11 +238,12 @@ export function SearchableSelect({
                 {option.id !== 'add-new' && onDelete && (
                   <button
                     type="button"
-                    className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                    className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded disabled:opacity-50"
                     onClick={(e) => {
                       e.stopPropagation()
-                      onDelete(option.id)
+                      handleDelete(option.id, option.name)
                     }}
+                    disabled={deletingId === option.id}
                     title="Delete"
                   >
                     <X className="h-3 w-3" />

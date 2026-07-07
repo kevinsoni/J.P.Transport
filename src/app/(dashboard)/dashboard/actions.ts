@@ -28,16 +28,16 @@ export async function getDashboardKPIs() {
 
     const totalReceived = receivedData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0
 
-    // Get total RTO charges this month
+    // Get total RTO charges this month (Gujarat + Maharashtra)
     const { data: rtoData, error: rtoError } = await supabase
       .from('trips')
-      .select('rto_charges')
+      .select('rto_charge_gujarat, rto_charge_maharashtra')
       .gte('trip_date', `${currentMonth}-01`)
       .lt('trip_date', `${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 10)}`)
 
     if (rtoError) throw rtoError
 
-    const totalRTO = rtoData?.reduce((sum, trip) => sum + (trip.rto_charges || 0), 0) || 0
+    const totalRTO = rtoData?.reduce((sum, trip) => sum + (trip.rto_charge_gujarat || 0) + (trip.rto_charge_maharashtra || 0), 0) || 0
 
     // Get trips today
     const today = new Date().toISOString().split('T')[0]

@@ -36,8 +36,13 @@ export async function createParty(formData: FormData) {
   return data
 }
 
-export async function createPartyAndRedirect(formData: FormData) {
-  await createParty(formData)
+export async function createPartyAndRedirect(formData: FormData): Promise<{ error: string } | void> {
+  try {
+    await createParty(formData)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create party'
+    return { error: message }
+  }
   redirect('/parties')
 }
 

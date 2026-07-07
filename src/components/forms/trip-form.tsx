@@ -25,6 +25,7 @@ interface TripFormProps {
 
 export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const [partiesList, setPartiesList] = useState(parties)
   const [trucksList, setTrucksList] = useState(trucks)
@@ -67,6 +68,20 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
     }))
   }
 
+  // Prevent decimal / exponent characters for whole-number-only fields.
+  const blockDecimalKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (['.', ',', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault()
+  }
+
+  // Round to a whole number (handles pasted decimals) and update the live total.
+  const handleWholeAmountChange = (field: string, el: HTMLInputElement) => {
+    if (el.value.includes('.') || el.value.includes(',')) {
+      const n = Number(el.value.replace(/,/g, ''))
+      el.value = el.value === '' ? '' : String(Number.isFinite(n) ? Math.round(n) : 0)
+    }
+    handleAmountChange(field, el.value)
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -88,14 +103,18 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
 
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
+    setError(null)
     try {
-      if (tripId && editData) {
-        await updateTrip(tripId, formData)
-      } else {
-        await createTrip(formData)
+      const result = tripId && editData
+        ? await updateTrip(tripId, formData)
+        : await createTrip(formData)
+      // On success the action redirects and this line is not reached.
+      if (result?.error) {
+        setError(result.error)
       }
-    } catch (error) {
-      console.error(tripId ? 'Trip update failed:' : 'Trip creation failed:', error)
+    } catch (err) {
+      console.error(tripId ? 'Trip update failed:' : 'Trip creation failed:', err)
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -110,8 +129,10 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
   }
 
   const numberToWords = (num: number): string => {
-    if (num === 0) return 'Zero'
-    
+    if (!isFinite(num) || num === 0) return 'Zero Rupees Only'
+    if (num < 0) return 'Minus ' + numberToWords(-num)
+    num = Math.round(num)
+
     const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
     const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
     const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
@@ -357,6 +378,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 name="rate"
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0.00"
                 defaultValue={editData?.rate || ''}
                 onChange={(e) => handleAmountChange('rate', e.target.value)}
@@ -369,6 +391,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 name="tp_charge_consignor1"
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0.00"
                 defaultValue={editData?.tp_charge_consignor1 || ''}
                 onChange={(e) => handleAmountChange('tp_charge_consignor1', e.target.value)}
@@ -380,6 +403,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 name="tp_charge_consignor2"
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0.00"
                 defaultValue={editData?.tp_charge_consignor2 || ''}
                 onChange={(e) => handleAmountChange('tp_charge_consignor2', e.target.value)}
@@ -391,6 +415,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 name="rto_charge_gujarat"
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0.00"
                 defaultValue={editData?.rto_charge_gujarat || ''}
                 onChange={(e) => handleAmountChange('rto_charge_gujarat', e.target.value)}
@@ -402,6 +427,7 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
                 name="rto_charge_maharashtra"
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0.00"
                 defaultValue={editData?.rto_charge_maharashtra || ''}
                 onChange={(e) => handleAmountChange('rto_charge_maharashtra', e.target.value)}
@@ -457,21 +483,27 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
               <Input
                 name="lr_amount"
                 type="number"
-                step="0.01"
-                placeholder="0.00"
+                step="1"
+                min="0"
+                inputMode="numeric"
+                placeholder="0"
                 defaultValue={editData?.lr_amount || ''}
-                onChange={(e) => handleAmountChange('lr_amount', e.target.value)}
+                onKeyDown={blockDecimalKeys}
+                onChange={(e) => handleWholeAmountChange('lr_amount', e.currentTarget)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="driver_cash_received">Driver Cash Received (Kachana)</Label>
+              <Label htmlFor="driver_cash_received">Driver Cash Received (Kacha na)</Label>
               <Input
                 name="driver_cash_received"
                 type="number"
-                step="0.01"
-                placeholder="0.00"
+                step="1"
+                min="0"
+                inputMode="numeric"
+                placeholder="0"
                 defaultValue={editData?.driver_cash_received || ''}
-                onChange={(e) => handleAmountChange('driver_cash_received', e.target.value)}
+                onKeyDown={blockDecimalKeys}
+                onChange={(e) => handleWholeAmountChange('driver_cash_received', e.currentTarget)}
               />
             </div>
           </div>
@@ -503,15 +535,18 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
 
 
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-3">
+          <p className="text-sm text-red-600 font-medium">{error}</p>
+        </div>
+      )}
+
       <div className="flex gap-4">
-        <Button 
-          type="submit" 
-          className="flex-1" 
-          disabled={isSubmitting}
+        <Button
+          type="submit"
+          className="flex-1"
+          loading={isSubmitting}
         >
-          {isSubmitting && (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-          )}
           {isSubmitting ? (tripId ? 'Updating Trip...' : 'Creating Trip...') : (tripId ? 'Update Trip' : 'Create Trip')}
         </Button>
       </div>

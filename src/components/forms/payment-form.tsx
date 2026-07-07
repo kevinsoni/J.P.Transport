@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -21,24 +22,34 @@ interface PaymentFormProps {
 }
 
 export function PaymentForm({ trips }: PaymentFormProps) {
+  const router = useRouter()
   const [selectedTrip, setSelectedTrip] = useState<TripForPayment | null>(null)
   const [amount, setAmount] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleTripSelect = (tripId: string) => {
     const trip = trips.find(t => t.id === tripId)
     setSelectedTrip(trip || null)
-    setAmount(trip?.balance_due.toString() || '')
+    setAmount(trip ? String(Math.round(trip.balance_due)) : '')
   }
 
   const handleSubmit = async (formData: FormData) => {
     if (!selectedTrip) return
-    
+
     setIsSubmitting(true)
+    setError(null)
     try {
-      await createPayment(formData)
-    } catch (error) {
-      console.error('Payment creation failed:', error)
+      const result = await createPayment(formData)
+      if (result?.error) {
+        setError(result.error)
+        return
+      }
+      router.push('/payments')
+      router.refresh()
+    } catch (err) {
+      console.error('Payment creation failed:', err)
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -104,10 +115,19 @@ export function PaymentForm({ trips }: PaymentFormProps) {
                 <Input
                   type="number"
                   name="amount"
-                  step="0.01"
+                  step="1"
                   min="0"
+                  inputMode="numeric"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (['.', ',', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault()
+                  }}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (v === '') { setAmount(''); return }
+                    const n = Number(v)
+                    if (Number.isFinite(n)) setAmount(String(Math.round(n)))
+                  }}
                   placeholder="Enter payment amount"
                   required
                 />
@@ -148,9 +168,16 @@ export function PaymentForm({ trips }: PaymentFormProps) {
               />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600 font-medium">{error}</p>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              loading={isSubmitting}
               disabled={isSubmitting || !selectedTrip}
             >
               {isSubmitting ? 'Recording Payment...' : 'Record Payment'}
