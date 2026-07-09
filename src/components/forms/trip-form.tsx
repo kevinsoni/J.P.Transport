@@ -1,16 +1,26 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { Plus, Minus, Trash2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { createTrip, updateTrip } from '@/app/(dashboard)/trips/actions'
 import { createParty, deleteParty } from '@/app/(dashboard)/parties/actions'
 import { createTruck, deleteTruck } from '@/app/(dashboard)/trucks/actions'
 import { Truck, Party, Trip } from '@/types/db'
+import { cn } from '@/lib/utils'
+
+type ExtraChargeRow = { id: string; label: string; amount: number; sign: '+' | '-'; include: boolean }
+
+const newRowId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `row-${Math.random().toString(36).slice(2)}`
 
 type TruckWithOwner = Truck & {
   owner: { name: string }[] | null
@@ -54,11 +64,39 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
     driver_cash_received: editData?.driver_cash_received || 0,
   })
 
+  const [extraCharges, setExtraCharges] = useState<ExtraChargeRow[]>(
+    Array.isArray(editData?.extra_charges)
+      ? editData.extra_charges.map((e: any) => ({
+          id: newRowId(),
+          label: e?.label ?? '',
+          amount: Number(e?.amount) || 0,
+          sign: e?.sign === '-' ? '-' : '+',
+          include: e?.include !== false,
+        }))
+      : []
+  )
+
+  const addExtraCharge = () =>
+    setExtraCharges(prev => [...prev, { id: newRowId(), label: '', amount: 0, sign: '+', include: true }])
+
+  const updateExtraCharge = (id: string, patch: Partial<Omit<ExtraChargeRow, 'id'>>) =>
+    setExtraCharges(prev => prev.map(e => (e.id === id ? { ...e, ...patch } : e)))
+
+  const removeExtraCharge = (id: string) =>
+    setExtraCharges(prev => prev.filter(e => e.id !== id))
+
+  // Only rows with a label and a positive amount are saved.
+  const validExtraCharges = extraCharges.filter(e => e.label.trim() !== '' && Number(e.amount) > 0)
+  // Of those, only the ones marked "include" affect the bill.
+  const extrasNet = validExtraCharges
+    .filter(e => e.include)
+    .reduce((sum, e) => sum + (e.sign === '-' ? -1 : 1) * (Number(e.amount) || 0), 0)
+
   // Calculate totals
   const rateAmount = amounts.rate * (amounts.payment_weight || 1)
-  const totalAmount = rateAmount + amounts.tp_charge_consignor1 + amounts.tp_charge_consignor2 + 
+  const totalAmount = rateAmount + amounts.tp_charge_consignor1 + amounts.tp_charge_consignor2 +
                      amounts.rto_charge_gujarat + amounts.rto_charge_maharashtra
-  const billAmount = totalAmount - amounts.lr_amount - amounts.driver_cash_received
+  const billAmount = totalAmount + extrasNet - amounts.lr_amount - amounts.driver_cash_received
 
   const handleAmountChange = (field: string, value: string) => {
     const numValue = parseFloat(value) || 0
@@ -476,6 +514,128 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
             </div>
           </div>
 
+          {/* Extra Charges / Adjustments */}
+          <input type="hidden" name="extra_charges" value={JSON.stringify(validExtraCharges.map(({ label, amount, sign, include }) => ({ label: label.trim(), amount, sign, include })))} />
+          <div className="space-y-3 rounded-lg border border-dashed border-gray-300 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <Label className="text-base">Extra Charges / Adjustments</Label>
+                <p className="text-xs text-gray-500">Add or subtract any other amounts (e.g. detention, halting, discount). Untick <span className="font-medium">In bill</span> to keep a row as a note without affecting the bill.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addExtraCharge}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add Row
+              </Button>
+            </div>
+
+            {extraCharges.length === 0 ? (
+              <p className="py-2 text-center text-sm text-gray-400">No extra charges added.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {extraCharges.map((extra) => (
+                  <div
+                    key={extra.id}
+                    className={cn(
+                      'flex flex-col gap-2 rounded-lg border p-2.5 transition-colors sm:flex-row sm:items-center',
+                      extra.include ? 'border-gray-200 bg-gray-50/70' : 'border-gray-200 bg-gray-100/60'
+                    )}
+                  >
+                    <Input
+                      placeholder="Label (e.g. Detention charge)"
+                      value={extra.label}
+                      onChange={(e) => updateExtraCharge(extra.id, { label: e.target.value })}
+                      className="min-w-0 flex-1"
+                    />
+                    <div className="flex shrink-0 items-center gap-2">
+                      {/* Include-in-bill toggle */}
+                      <button
+                        type="button"
+                        onClick={() => updateExtraCharge(extra.id, { include: !extra.include })}
+                        aria-pressed={extra.include}
+                        title={extra.include ? 'Counted in bill — click to make it a note only' : 'Not in bill — click to add it to the bill'}
+                        className={cn(
+                          'flex h-10 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition-colors',
+                          extra.include
+                            ? 'border-blue-500 bg-blue-500 text-white'
+                            : 'border-gray-300 bg-white text-gray-400 hover:border-gray-400'
+                        )}
+                      >
+                        <span className={cn(
+                          'flex h-4 w-4 items-center justify-center rounded-[4px] border',
+                          extra.include ? 'border-white bg-white/20' : 'border-gray-300'
+                        )}>
+                          {extra.include && <Check className="h-3 w-3" />}
+                        </span>
+                        In bill
+                      </button>
+
+                      <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={extra.amount || ''}
+                          onChange={(e) => updateExtraCharge(extra.id, { amount: parseFloat(e.target.value) || 0 })}
+                          className="w-24 pl-7 sm:w-28"
+                        />
+                      </div>
+
+                      {/* Add (+) / Subtract (-) toggle */}
+                      <div className="inline-flex overflow-hidden rounded-md border border-gray-200">
+                        <button
+                          type="button"
+                          onClick={() => updateExtraCharge(extra.id, { sign: '+' })}
+                          aria-label="Add this amount"
+                          aria-pressed={extra.sign === '+'}
+                          className={cn(
+                            'flex h-10 w-10 items-center justify-center transition-colors',
+                            extra.sign === '+' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+                          )}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateExtraCharge(extra.id, { sign: '-' })}
+                          aria-label="Subtract this amount"
+                          aria-pressed={extra.sign === '-'}
+                          className={cn(
+                            'flex h-10 w-10 items-center justify-center border-l border-gray-200 transition-colors',
+                            extra.sign === '-' ? 'bg-red-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+                          )}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeExtraCharge(extra.id)}
+                        aria-label="Remove row"
+                        className="h-10 w-10 shrink-0 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {validExtraCharges.some(e => e.include) && (
+              <div className="flex items-center justify-end gap-2 border-t border-gray-100 pt-2 text-sm">
+                <span className="text-gray-500">Net adjustment:</span>
+                <span className={cn('font-semibold', extrasNet < 0 ? 'text-red-600' : 'text-emerald-600')}>
+                  {extrasNet < 0 ? '− ' : '+ '}{formatCurrency(Math.abs(extrasNet))}
+                </span>
+              </div>
+            )}
+          </div>
+
           {/* Deductions */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -515,6 +675,12 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
               <div className="text-sm text-gray-700">
                 Total Amount: {formatCurrency(totalAmount)}
               </div>
+              {validExtraCharges.filter(e => e.include).map((extra) => (
+                <div key={extra.id} className="text-sm text-gray-700">
+                  {extra.sign === '-' ? 'Less' : 'Add'}: {extra.label.trim()}: {extra.sign === '-' ? '− ' : '+ '}
+                  {formatCurrency(Number(extra.amount) || 0)}
+                </div>
+              ))}
               <div className="text-sm text-gray-700">
                 Less: L/R Amount: {formatCurrency(amounts.lr_amount)}
               </div>
@@ -533,7 +699,25 @@ export function TripForm({ trucks, parties, editData, tripId }: TripFormProps) {
         </CardContent>
       </Card>
 
-
+      {/* Remarks */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Remarks</CardTitle>
+          <CardDescription>Add any additional notes for this trip (optional).</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="remarks" className="sr-only">Remarks</Label>
+            <Textarea
+              id="remarks"
+              name="remarks"
+              rows={4}
+              placeholder="e.g. special handling instructions, delays, agreed terms, anything else worth noting…"
+              defaultValue={editData?.remarks || ''}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-3">

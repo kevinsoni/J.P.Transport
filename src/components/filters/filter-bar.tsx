@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent } from '@/components/ui/card'
 import type { FiltersData } from '@/lib/validators'
 
 interface FilterBarProps {
@@ -46,35 +45,36 @@ export function FilterBar({
   const hasActiveFilters = Object.values(localFilters).some(value => value !== undefined && value !== '')
 
   return (
-    <Card className="mb-6">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4" />
-            <span className="font-medium">Filters</span>
-            {hasActiveFilters && (
-              <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                {Object.values(localFilters).filter(v => v).length} active
-              </span>
-            )}
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+            <Filter className="h-4 w-4" />
           </div>
-          
-          <div className="flex items-center space-x-2">
-            {hasActiveFilters && (
-              <Button onClick={clearFilters} variant="ghost" size="sm">
-                <X className="w-4 h-4 mr-1" />
-                Clear
-              </Button>
-            )}
-            {onToggleExpanded && (
-              <Button onClick={onToggleExpanded} variant="outline" size="sm">
-                {showExpanded ? 'Simple' : 'Advanced'}
-              </Button>
-            )}
-          </div>
+          <span className="font-semibold text-gray-800">Filters</span>
+          {hasActiveFilters && (
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
+              {Object.values(localFilters).filter(v => v).length} active
+            </span>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex items-center gap-2">
+          {hasActiveFilters && (
+            <Button onClick={clearFilters} variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
+              <X className="mr-1 h-4 w-4" />
+              Clear
+            </Button>
+          )}
+          {onToggleExpanded && (
+            <Button onClick={onToggleExpanded} variant="outline" size="sm">
+              {showExpanded ? 'Simple' : 'Advanced'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <Label htmlFor="dateFrom" className="text-sm font-medium">From Date</Label>
             <Input
@@ -166,7 +166,6 @@ export function FilterBar({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   )
 }

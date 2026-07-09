@@ -19,6 +19,14 @@ export const TruckSchema = z.object({
   active: z.boolean().default(true),
 })
 
+export const ExtraChargeSchema = z.object({
+  label: z.string().trim().min(1, 'Label is required').max(120, 'Label is too long'),
+  amount: z.number().min(0, 'Amount must be positive'),
+  sign: z.enum(['+', '-']).default('+'),
+  // When false, the item is saved as a note but not counted in the bill.
+  include: z.boolean().default(true),
+})
+
 export const TripSchema = z.object({
   id: z.string().optional(),
   trip_date: z.string().min(1, 'Trip date is required'),
@@ -42,15 +50,21 @@ export const TripSchema = z.object({
   rto_charge_maharashtra: z.number().min(0).default(0),
   lr_amount: z.number().min(0).default(0),
   driver_cash_received: z.number().min(0).default(0),
+  extra_charges: z.array(ExtraChargeSchema).optional().default([]),
   settlement_party_id: z.string().optional().nullable(),
+  remarks: z.string().optional().nullable(),
 })
 
 export const PaymentSchema = z.object({
   id: z.string().optional(),
-  trip_id: z.string().min(1, 'Trip is required'),
-  payment_date: z.string().min(1, 'Payment date is required'),
-  amount: z.number().min(0, 'Amount must be positive'),
-  method: z.enum(['CASH', 'UPI', 'BANK', 'OTHER']),
+  trip_id: z.string().min(1, 'Please select a trip'),
+  payment_date: z.string().min(1, 'Please choose a payment date'),
+  amount: z
+    .number({ invalid_type_error: 'Please enter a valid amount' })
+    .positive('Amount must be greater than 0'),
+  method: z.enum(['CASH', 'UPI', 'BANK', 'OTHER'], {
+    errorMap: () => ({ message: 'Please select a payment method' }),
+  }),
   reference_no: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
 })
@@ -79,6 +93,7 @@ export const FiltersSchema = z.object({
   paymentStatus: z.enum(['UNPAID', 'PARTIAL', 'PAID']).optional(),
 })
 
+export type ExtraChargeData = z.infer<typeof ExtraChargeSchema>
 export type PartyFormData = z.infer<typeof PartySchema>
 export type TruckFormData = z.infer<typeof TruckSchema>
 export type TripFormData = z.infer<typeof TripSchema>

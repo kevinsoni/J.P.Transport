@@ -9,13 +9,15 @@ interface DeleteConfirmationDialogProps {
   itemType: string
   onConfirm: () => void | Promise<void>
   disabled?: boolean
+  className?: string
 }
 
 export function DeleteConfirmationDialog({
   itemName,
   itemType,
   onConfirm,
-  disabled = false
+  disabled = false,
+  className = 'text-red-600 hover:text-red-700 hover:bg-red-50'
 }: DeleteConfirmationDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -45,7 +47,7 @@ export function DeleteConfirmationDialog({
       <Button
         variant="ghost"
         size="sm"
-        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+        className={className}
         onClick={() => setIsOpen(true)}
         disabled={disabled}
       >

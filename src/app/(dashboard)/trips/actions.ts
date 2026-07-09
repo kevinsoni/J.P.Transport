@@ -5,6 +5,25 @@ import { TripSchema } from '@/lib/validators'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+function parseExtraCharges(raw: FormDataEntryValue | null) {
+  if (typeof raw !== 'string' || raw.trim() === '') return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .map((item: any) => ({
+        label: String(item?.label ?? '').trim(),
+        amount: Number(item?.amount) || 0,
+        sign: item?.sign === '-' ? ('-' as const) : ('+' as const),
+        // Default to included unless explicitly set to false.
+        include: item?.include !== false,
+      }))
+      .filter((item) => item.label !== '' && item.amount > 0)
+  } catch {
+    return []
+  }
+}
+
 function parseTripFormData(formData: FormData) {
   return {
     trip_date: formData.get('trip_date') as string,
@@ -27,7 +46,9 @@ function parseTripFormData(formData: FormData) {
     rto_charge_maharashtra: parseFloat(formData.get('rto_charge_maharashtra') as string) || 0,
     lr_amount: Math.round(parseFloat(formData.get('lr_amount') as string) || 0),
     driver_cash_received: Math.round(parseFloat(formData.get('driver_cash_received') as string) || 0),
+    extra_charges: parseExtraCharges(formData.get('extra_charges')),
     settlement_party_id: formData.get('settlement_party_id') as string || null,
+    remarks: formData.get('remarks') as string || null,
   }
 }
 

@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PaymentPopup } from '@/components/forms/payment-popup'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import type { TripWithRelations } from '@/types/db'
+import { cn, formatCurrency, formatDate } from '@/lib/utils'
+import type { ExtraCharge, TripWithRelations } from '@/types/db'
 
 interface TripDetailsClientProps {
   params: { id: string }
@@ -181,17 +181,83 @@ export default function TripDetailsClient({ params, trip }: TripDetailsClientPro
               <CardTitle>Financial Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between text-lg font-bold">
-                <span>Bill Amount</span>
-                <span>{formatCurrency(trip.total_amount)}</span>
+              {(() => {
+                const weight = trip.payment_weight && trip.payment_weight > 0 ? trip.payment_weight : 1
+                const rateAmount = (trip.rate || 0) * weight
+                const allExtras: ExtraCharge[] = Array.isArray(trip.extra_charges) ? trip.extra_charges : []
+                const extras = allExtras.filter(e => e.include !== false)
+                const noteExtras = allExtras.filter(e => e.include === false)
+                const charges = [
+                  { label: 'Rate Amount', value: rateAmount },
+                  { label: 'TP Charge 1', value: trip.tp_charge_consignor1 || 0 },
+                  { label: 'TP Charge 2', value: trip.tp_charge_consignor2 || 0 },
+                  { label: 'RTO Gujarat', value: trip.rto_charge_gujarat || 0 },
+                  { label: 'RTO Maharashtra', value: trip.rto_charge_maharashtra || 0 },
+                ].filter(c => c.value > 0)
+
+                return (
+                  <div className="space-y-2 text-sm">
+                    {charges.map(c => (
+                      <div key={c.label} className="flex justify-between text-gray-600">
+                        <span>{c.label}</span>
+                        <span className="tabular-nums">{formatCurrency(c.value)}</span>
+                      </div>
+                    ))}
+
+                    {extras.map((extra, i) => (
+                      <div key={`${extra.label}-${i}`} className="flex justify-between">
+                        <span className="text-gray-600">
+                          {extra.sign === '-' ? 'Less' : 'Add'}: {extra.label}
+                        </span>
+                        <span className={cn('tabular-nums', extra.sign === '-' ? 'text-red-600' : 'text-emerald-600')}>
+                          {extra.sign === '-' ? '− ' : '+ '}{formatCurrency(Number(extra.amount) || 0)}
+                        </span>
+                      </div>
+                    ))}
+
+                    {(trip.lr_amount || 0) > 0 && (
+                      <div className="flex justify-between text-gray-600">
+                        <span>Less: L/R Amount</span>
+                        <span className="tabular-nums text-red-600">− {formatCurrency(trip.lr_amount)}</span>
+                      </div>
+                    )}
+                    {(trip.driver_cash_received || 0) > 0 && (
+                      <div className="flex justify-between text-gray-600">
+                        <span>Less: Driver Cash</span>
+                        <span className="tabular-nums text-red-600">− {formatCurrency(trip.driver_cash_received)}</span>
+                      </div>
+                    )}
+
+                    {noteExtras.length > 0 && (
+                      <div className="mt-2 border-t border-dashed border-gray-200 pt-2">
+                        <p className="mb-1 text-xs font-medium text-gray-400">Notes (not billed)</p>
+                        {noteExtras.map((extra, i) => (
+                          <div key={`note-${extra.label}-${i}`} className="flex justify-between text-gray-400">
+                            <span>{extra.label}</span>
+                            <span className="tabular-nums">{extra.sign === '-' ? '− ' : '+ '}{formatCurrency(Number(extra.amount) || 0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              <div className="border-t border-gray-200 pt-3">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Bill Amount</span>
+                  <span className="tabular-nums">{formatCurrency(trip.total_amount)}</span>
+                </div>
               </div>
               <div className="flex justify-between text-green-600">
                 <span>Amount Received</span>
-                <span>{formatCurrency(trip.amount_received)}</span>
+                <span className="tabular-nums">{formatCurrency(trip.amount_received)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Balance Due</span>
-                <span>{formatCurrency(trip.balance_due)}</span>
+                <span className={cn('tabular-nums font-semibold', trip.balance_due > 0 ? 'text-red-600' : 'text-gray-500')}>
+                  {formatCurrency(trip.balance_due)}
+                </span>
               </div>
             </CardContent>
           </Card>

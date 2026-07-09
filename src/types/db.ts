@@ -11,6 +11,15 @@ export type TripStatus = 'IN' | 'OUT' | 'COMPLETED' | 'CANCELLED'
 export type PaymentMethod = 'CASH' | 'UPI' | 'BANK' | 'OTHER'
 export type PaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID'
 
+/** A user-defined extra amount that is added (+) to or subtracted (-) from the trip total. */
+export interface ExtraCharge {
+  label: string
+  amount: number
+  sign: '+' | '-'
+  /** When false, the item is recorded as a note but NOT counted in the bill. Defaults to true. */
+  include: boolean
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -117,6 +126,7 @@ export interface Database {
           lr_amount: number
           driver_cash_received: number
           party_payment_name: string | null
+          extra_charges: ExtraCharge[]
           total_amount: number
           amount_received: number
           balance_due: number
@@ -172,6 +182,7 @@ export interface Database {
           lr_amount?: number
           driver_cash_received?: number
           party_payment_name?: string | null
+          extra_charges?: ExtraCharge[]
           total_amount?: number
           amount_received?: number
           balance_due?: number
@@ -214,6 +225,7 @@ export interface Database {
           diesel_advance?: number
           other_charges?: number
           tax_percent?: number
+          extra_charges?: ExtraCharge[]
           total_amount?: number
           amount_received?: number
           balance_due?: number

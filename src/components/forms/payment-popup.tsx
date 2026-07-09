@@ -285,7 +285,7 @@ export function PaymentPopup({ trip, isOpen, onClose, onSuccess }: PaymentPopupP
               <Button
                 type="submit"
                 loading={isSubmitting}
-                disabled={isSubmitting || !amount || parseFloat(amount) > trip.balance_due}
+                disabled={isSubmitting || !amount || !paymentMethod || parseFloat(amount) > trip.balance_due}
                 className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
               >
                 {isSubmitting ? 'Processing...' : `Record Payment ${amount ? formatCurrency(parseFloat(amount)) : ''}`}
