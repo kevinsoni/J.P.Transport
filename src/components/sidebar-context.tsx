@@ -19,7 +19,8 @@ const STORAGE_KEY = 'jp-sidebar-collapsed'
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsedState] = useState(false)
+  // Collapsed by default; a saved preference (if any) overrides this after mount.
+  const [collapsed, setCollapsedState] = useState(true)
   const [hovered, setHovered] = useState(false)
 
   useEffect(() => {

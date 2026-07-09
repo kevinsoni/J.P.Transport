@@ -39,10 +39,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Already signed in and visiting an auth page -> send to dashboard.
+  // Already signed in and visiting an auth page -> send to the main page (Trips).
   if (user && isPublic) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/trips'
     return NextResponse.redirect(url)
   }
 

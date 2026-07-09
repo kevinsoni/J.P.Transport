@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Filter, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ interface FilterBarProps {
   onFiltersChange: (filters: FiltersData) => void
   showExpanded?: boolean
   onToggleExpanded?: () => void
+  hideHeader?: boolean
 }
 
 export function FilterBar({
@@ -27,8 +28,14 @@ export function FilterBar({
   onFiltersChange,
   showExpanded = false,
   onToggleExpanded,
+  hideHeader = false,
 }: FilterBarProps) {
   const [localFilters, setLocalFilters] = useState(filters)
+
+  // Keep local inputs in sync when the parent resets/changes filters (e.g. "Clear all").
+  useEffect(() => {
+    setLocalFilters(filters)
+  }, [filters])
 
   const updateFilter = (key: keyof FiltersData, value: string | undefined) => {
     const newFilters = { ...localFilters, [key]: value || undefined }
@@ -46,35 +53,37 @@ export function FilterBar({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-            <Filter className="h-4 w-4" />
+      {!hideHeader && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+              <Filter className="h-4 w-4" />
+            </div>
+            <span className="font-semibold text-gray-800">Filters</span>
+            {hasActiveFilters && (
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
+                {Object.values(localFilters).filter(v => v).length} active
+              </span>
+            )}
           </div>
-          <span className="font-semibold text-gray-800">Filters</span>
-          {hasActiveFilters && (
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
-              {Object.values(localFilters).filter(v => v).length} active
-            </span>
-          )}
-        </div>
 
-        <div className="flex items-center gap-2">
-          {hasActiveFilters && (
-            <Button onClick={clearFilters} variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
-              <X className="mr-1 h-4 w-4" />
-              Clear
-            </Button>
-          )}
-          {onToggleExpanded && (
-            <Button onClick={onToggleExpanded} variant="outline" size="sm">
-              {showExpanded ? 'Simple' : 'Advanced'}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {hasActiveFilters && (
+              <Button onClick={clearFilters} variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
+                <X className="mr-1 h-4 w-4" />
+                Clear
+              </Button>
+            )}
+            {onToggleExpanded && (
+              <Button onClick={onToggleExpanded} variant="outline" size="sm">
+                {showExpanded ? 'Simple' : 'Advanced'}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="dateFrom" className="text-sm font-medium">From Date</Label>
             <Input
@@ -134,7 +143,7 @@ export function FilterBar({
         </div>
 
         {showExpanded && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4 pt-4 border-t">
             <div>
               <Label htmlFor="city" className="text-sm font-medium">City</Label>
               <Input

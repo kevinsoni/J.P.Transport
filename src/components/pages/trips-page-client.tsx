@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Route, Receipt, TrendingUp, Wallet, CreditCard } from 'lucide-react'
+import { Plus, Route, Receipt, TrendingUp, Wallet, CreditCard, SlidersHorizontal, X } from 'lucide-react'
 
 import { cn, formatCurrency } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -26,7 +26,7 @@ const accentMap = {
 
 export function TripsPageClient({ trips }: TripsPageClientProps) {
   const [filters, setFilters] = useState<FiltersData>({})
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [loading] = useState(false)
   const [selectedTrip, setSelectedTrip] = useState<TripWithRelations | null>(null)
   const [isPaymentPopupOpen, setIsPaymentPopupOpen] = useState(false)
@@ -120,18 +120,6 @@ export function TripsPageClient({ trips }: TripsPageClientProps) {
         ))}
       </div>
 
-      {/* Filters */}
-      {showAdvancedFilters && (
-        <div className="animate-in fade-in slide-in-from-top-2 duration-200 rounded-2xl border border-gray-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-sm">
-          <FilterBar
-            filters={filters}
-            onFiltersChange={setFilters}
-            showExpanded={showAdvancedFilters}
-            onToggleExpanded={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          />
-        </div>
-      )}
-
       {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-gray-200/70 bg-white/80 shadow-sm backdrop-blur-sm">
         <TripsTable
@@ -141,11 +129,69 @@ export function TripsPageClient({ trips }: TripsPageClientProps) {
           setSelectedTrip={setSelectedTrip}
           isPaymentPopupOpen={isPaymentPopupOpen}
           setIsPaymentPopupOpen={setIsPaymentPopupOpen}
-          showFilters={showAdvancedFilters}
-          onToggleFilters={() => setShowAdvancedFilters(v => !v)}
+          showFilters={isFilterOpen}
+          onToggleFilters={() => setIsFilterOpen(v => !v)}
           activeFilterCount={activeFilterCount}
         />
       </div>
+
+      {/* Filters drawer (right side) */}
+      {isFilterOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setIsFilterOpen(false)}
+          />
+          <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl animate-in slide-in-from-right-[100%] duration-300">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                  <SlidersHorizontal className="h-4 w-4" />
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+                {activeFilterCount > 0 && (
+                  <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setIsFilterOpen(false)}
+                aria-label="Close filters"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              <FilterBar
+                filters={filters}
+                onFiltersChange={setFilters}
+                showExpanded
+                hideHeader
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-gray-200 px-5 py-4">
+              <Button
+                variant="outline"
+                onClick={() => setFilters({})}
+                disabled={activeFilterCount === 0}
+                className="text-gray-600"
+              >
+                Clear all
+              </Button>
+              <Button
+                onClick={() => setIsFilterOpen(false)}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              >
+                Show {filteredTrips.length} result{filteredTrips.length === 1 ? '' : 's'}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
 
       <TripSelectionPopup
         trips={payableTrips}

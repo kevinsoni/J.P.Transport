@@ -10,16 +10,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SortableTableHeader } from '@/components/ui/sortable-table-header'
-import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog'
-import { Eye, Edit } from 'lucide-react'
+import { RowActions } from '@/components/tables/row-actions'
+import { cn } from '@/lib/utils'
 import { Party } from '@/types/db'
 import { deleteParty } from '@/app/(dashboard)/parties/actions'
 
 interface PartiesTableProps {
   parties: Party[]
+}
+
+const typeStyles: Record<string, { label: string; badge: string; dot: string }> = {
+  consignor: { label: 'Consignor', badge: 'bg-blue-50 text-blue-700 ring-blue-600/20', dot: 'bg-blue-500' },
+  consignee: { label: 'Consignee', badge: 'bg-purple-50 text-purple-700 ring-purple-600/20', dot: 'bg-purple-500' },
+  owner: { label: 'Owner', badge: 'bg-amber-50 text-amber-700 ring-amber-600/20', dot: 'bg-amber-500' },
+  transport: { label: 'Transport', badge: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20', dot: 'bg-indigo-500' },
 }
 
 export function PartiesTable({ parties }: PartiesTableProps) {
@@ -79,35 +85,6 @@ export function PartiesTable({ parties }: PartiesTableProps) {
       return 0
     })
   }, [parties, sortConfig])
-  const getTypeBadgeVariant = (type: string) => {
-    switch (type) {
-      case 'consignor':
-        return 'default' as const
-      case 'consignee':
-        return 'secondary' as const
-      case 'owner':
-        return 'outline' as const
-      case 'transport':
-        return 'destructive' as const
-      default:
-        return 'secondary' as const
-    }
-  }
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'consignor':
-        return 'Consignor'
-      case 'consignee':
-        return 'Consignee'
-      case 'owner':
-        return 'Owner'
-      case 'transport':
-        return 'Transport'
-      default:
-        return type
-    }
-  }
 
   if (sortedParties.length === 0) {
     return (
@@ -121,11 +98,11 @@ export function PartiesTable({ parties }: PartiesTableProps) {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="overflow-hidden rounded-xl border border-gray-200">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[60px]">Sr No.</TableHead>
+          <TableRow className="border-b border-gray-200 bg-gray-50/80 hover:bg-gray-50/80">
+            <TableHead className="h-12 w-[64px] px-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">#</TableHead>
             <SortableTableHeader sortKey="name" currentSort={sortConfig} onSort={handleSort}>
               Name
             </SortableTableHeader>
@@ -144,41 +121,37 @@ export function PartiesTable({ parties }: PartiesTableProps) {
             <SortableTableHeader sortKey="city" currentSort={sortConfig} onSort={handleSort}>
               City
             </SortableTableHeader>
-            <TableHead className="w-[100px]">Actions</TableHead>
+            <TableHead className="h-12 w-[120px] px-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedParties.map((party, index) => (
-            <TableRow key={party.id}>
-              <TableCell className="text-center text-sm text-gray-600">
-                {index + 1}
-              </TableCell>
-              <TableCell className="font-medium">{party.name}</TableCell>
-              <TableCell>
-                <Badge variant={getTypeBadgeVariant(party.type)}>
-                  {getTypeLabel(party.type)}
-                </Badge>
-              </TableCell>
-              <TableCell>{party.phone || '-'}</TableCell>
-              <TableCell>{party.email || '-'}</TableCell>
-              <TableCell className="font-mono text-sm">{party.gstin || '-'}</TableCell>
-              <TableCell>{party.city || '-'}</TableCell>
-              <TableCell>
-                <div className="flex items-center space-x-1">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/parties/${party.id}`}>
-                      <Eye className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/parties/${party.id}/edit`}>
-                      <Edit className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                  <DeleteConfirmationDialog 
+          {sortedParties.map((party, index) => {
+            const style = typeStyles[party.type] ?? { label: party.type, badge: 'bg-gray-100 text-gray-600 ring-gray-500/20', dot: 'bg-gray-400' }
+            return (
+              <TableRow key={party.id} className="group border-b border-gray-100 transition-colors hover:bg-blue-50/40">
+                <TableCell className="px-4 py-3 text-center">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-500 transition-colors group-hover:bg-blue-100 group-hover:text-blue-700">
+                    {index + 1}
+                  </span>
+                </TableCell>
+                <TableCell className="px-4 py-3 font-medium text-gray-900">{party.name}</TableCell>
+                <TableCell className="px-4 py-3">
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ring-1 ring-inset', style.badge)}>
+                    <span className={cn('h-1.5 w-1.5 rounded-full', style.dot)} />
+                    {style.label}
+                  </span>
+                </TableCell>
+                <TableCell className="px-4 py-3 text-gray-700">{party.phone || '-'}</TableCell>
+                <TableCell className="px-4 py-3 text-gray-700">{party.email || '-'}</TableCell>
+                <TableCell className="px-4 py-3 font-mono text-sm text-gray-600">{party.gstin || '-'}</TableCell>
+                <TableCell className="px-4 py-3 text-gray-700">{party.city || '-'}</TableCell>
+                <TableCell className="px-4 py-3">
+                  <RowActions
+                    viewHref={`/parties/${party.id}`}
+                    editHref={`/parties/${party.id}/edit`}
                     itemName={party.name}
                     itemType="party"
-                    onConfirm={async () => {
+                    onDelete={async () => {
                       try {
                         await deleteParty(party.id)
                       } catch (error) {
@@ -186,10 +159,10 @@ export function PartiesTable({ parties }: PartiesTableProps) {
                       }
                     }}
                   />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                </TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>

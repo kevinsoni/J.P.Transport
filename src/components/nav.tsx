@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   Truck,
-  LayoutDashboard,
   Route,
   CreditCard,
   Users,
@@ -23,7 +22,6 @@ import { cn } from '@/lib/utils'
 import { useSidebar } from '@/components/sidebar-context'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Trips', href: '/trips', icon: Route },
   { name: 'Trucks', href: '/trucks', icon: Truck },
   { name: 'Payments', href: '/payments', icon: CreditCard },
